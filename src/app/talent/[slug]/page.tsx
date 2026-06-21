@@ -6,6 +6,8 @@ import Link from "next/link";
 import { NavBar } from "@/components/NavBar";
 import { Footer } from "@/components/Footer";
 import { PortfolioGallery } from "@/components/talent/PortfolioGallery";
+import { useAppDispatch } from "@/store/hooks";
+import { setInquiryTalent } from "@/store/slices/uiSlice";
 import {
   useGetTalentBySlugQuery,
   type TalentMeasurement,
@@ -37,6 +39,7 @@ export default function TalentDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = use(params);
+  const dispatch = useAppDispatch();
   const { data: talent, isFetching, isError } = useGetTalentBySlugQuery(slug);
 
   if (isFetching && !talent) {
@@ -77,11 +80,14 @@ export default function TalentDetailPage({
     <>
       <NavBar />
       <main className="w-full max-w-editorial mx-auto pb-section">
-        <section className="grid grid-cols-1 md:grid-cols-12 gap-gutter md:gap-12 px-margin-mobile md:px-margin-desktop pt-10 md:pt-16 pb-section">
+        <section className="grid grid-cols-1 md:grid-cols-12 gap-gutter md:gap-12 px-margin-mobile md:px-margin-desktop pt-6 md:pt-8 pb-12">
           {/* Composite card (left) — comp card: photo + name + stats */}
           <div className="md:col-span-5">
             <div className="border border-outline-variant md:sticky md:top-24">
-              <div className="relative aspect-[4/5] w-full">
+              {/* Portrait capped to viewport height so the full comp card
+                  (photo + name + measurements) lands in one screen instead of
+                  a 700px image pushing the stats below the fold. */}
+              <div className="relative h-[44vh] md:h-[52vh] w-full">
                 <Image
                   src={talent.cover}
                   alt={talent.coverAlt}
@@ -140,20 +146,35 @@ export default function TalentDetailPage({
             <p className="text-body-lg text-secondary max-w-prose mt-8">
               {talent.bio}
             </p>
+            {/* Primary action lives in the hero so the right column reads as a
+                complete unit (no hollow space) and the key client action is
+                above the fold. Talent name carried to /collaboration via RTK. */}
+            <Link
+              href="/collaboration"
+              onClick={() => dispatch(setInquiryTalent(talent.name))}
+              className="mt-10 inline-block self-start text-label-uppercase bg-primary text-on-primary px-10 py-4 hover:bg-accent transition-colors uppercase"
+            >
+              INQUIRE ABOUT THIS TALENT
+            </Link>
           </div>
         </section>
 
         {/* Portfolio — works posted by the agency for this talent */}
         <PortfolioGallery items={talent.portfolio} />
 
-        <section className="px-margin-mobile md:px-margin-desktop py-24 bg-surface-container-low text-center">
-          <h3 className="font-display text-headline-md text-primary mb-8 max-w-2xl mx-auto uppercase">
+        <section className="px-margin-mobile md:px-margin-desktop py-12 bg-surface-container-low text-center">
+          <h3 className="font-display text-headline-md text-primary mb-6 max-w-2xl mx-auto uppercase">
             INTERESTED IN BOOKING {talent.name.split(" ")[0]} FOR YOUR NEXT
             CAMPAIGN?
           </h3>
+          {/* Inquiry adalah aksi khusus client → arahkan ke halaman client-only
+              /collaboration. RoleGate di sana yang menyaring: client lanjut ke
+              form, selain itu diarahkan login/daftar sebagai client. Nama talent
+              dibawa lewat RTK supaya field "preferred model" otomatis terisi. */}
           <Link
-            href="/auth"
-            className="inline-block text-label-uppercase bg-primary text-on-primary px-12 py-5 hover:opacity-70 transition-opacity uppercase"
+            href="/collaboration"
+            onClick={() => dispatch(setInquiryTalent(talent.name))}
+            className="inline-block text-label-uppercase bg-primary text-on-primary px-12 py-5 hover:bg-accent transition-colors uppercase"
           >
             INQUIRE ABOUT THIS TALENT
           </Link>

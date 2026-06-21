@@ -45,7 +45,7 @@ function buildHtml(resetUrl: string): string {
     <p style="font-size: 13px; color: #555; word-break: break-all;">${resetUrl}</p>
     <hr style="border:none;border-top:1px solid #e5e5e5;margin:24px 0;" />
     <p style="font-size: 12px; color: #888;">
-      Jika Anda tidak meminta perubahan ini, abaikan email ini — password Anda tidak akan berubah.
+      Jika Anda tidak meminta perubahan ini, abaikan email ini. Password Anda tidak akan berubah.
     </p>
   </div>`;
 }

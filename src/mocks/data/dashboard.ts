@@ -1,10 +1,15 @@
-import type { DashboardSummary } from "@/store/api/dashboardApi";
+import type {
+  DashboardSummary,
+  TalentApplication,
+  ApplicationType,
+  ModellingBatch,
+} from "@/store/api/dashboardApi";
 
 export const dashboardSummary: DashboardSummary = {
   greeting: {
     name: "ELARA",
     subtitle:
-      "Your personal talent space — track every application and modelling class in one place.",
+      "Select the desired submission and track its status",
   },
   applications: [
     {
@@ -51,3 +56,59 @@ export const dashboardSummary: DashboardSummary = {
     },
   ],
 };
+
+// Batch kelas modelling yang tersedia untuk didaftari (PRD: BATCH_MODELLING).
+export const batches: ModellingBatch[] = [
+  {
+    id: "batch-11",
+    namaBatch: "Runway Fundamentals",
+    batchKe: 11,
+    kuota: 20,
+    tglMulai: "2026-08-01",
+    tglBerakhir: "2026-09-12",
+    statusPendaftaran: "buka",
+  },
+  {
+    id: "batch-12",
+    namaBatch: "Editorial Posing Intensive",
+    batchKe: 12,
+    kuota: 15,
+    tglMulai: "2026-09-20",
+    tglBerakhir: "2026-10-25",
+    statusPendaftaran: "buka",
+  },
+  {
+    id: "batch-13",
+    namaBatch: "Commercial Acting Basics",
+    batchKe: 13,
+    kuota: 18,
+    tglMulai: "2026-10-05",
+    tglBerakhir: "2026-11-09",
+    statusPendaftaran: "tutup",
+  },
+];
+
+export function listBatches(): ModellingBatch[] {
+  return batches;
+}
+
+export function findBatch(id: string): ModellingBatch | undefined {
+  return batches.find((b) => b.id === id);
+}
+
+// Tambah pengajuan baru dari form talent. Status awal "pending", tanggal hari
+// ini. Disimpan di depan biar langsung kelihatan paling atas di riwayat.
+export function addApplication(input: {
+  jenis: ApplicationType;
+  judul: string;
+}): TalentApplication {
+  const application: TalentApplication = {
+    id: `ap-${Date.now()}`,
+    jenis: input.jenis,
+    judul: input.judul,
+    tanggal: new Date().toISOString().slice(0, 10),
+    status: "pending",
+  };
+  dashboardSummary.applications.unshift(application);
+  return application;
+}

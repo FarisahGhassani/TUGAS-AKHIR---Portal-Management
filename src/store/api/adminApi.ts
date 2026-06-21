@@ -25,23 +25,26 @@ export type ClientInquiry = {
   excerpt: string;
 };
 
-export type AdminOverview = {
+// Satu item feed "notifikasi terbaru" di dashboard admin — diturunkan server
+// dari pendaftaran talent & inquiry klien yang baru masuk.
+export type AdminNotification = {
+  id: string;
+  kind: "application" | "inquiry";
+  title: string;
+  detail: string;
+  time: string;
+};
+
+// Bentuk data mentah yang disimpan di server-store (tanpa turunan notifikasi).
+export type OverviewData = {
   metrics: AdminMetrics;
   applications: TalentApplication[];
   inquiries: ClientInquiry[];
 };
 
-export type AnnouncementDraft = {
-  headline: string;
-  message: string;
-  publish: boolean;
-};
-
-export type AnnouncementResponse = {
-  id: string;
-  headline: string;
-  message: string;
-  publishedAt: string | null;
+// Yang dikirim ke klien: data mentah + feed notifikasi yang sudah dirakit.
+export type AdminOverview = OverviewData & {
+  notifications: AdminNotification[];
 };
 
 export type AdminAccount = AuthUser & {
@@ -56,7 +59,7 @@ export type AdminAccountsResponse = {
 export const adminApi = createApi({
   reducerPath: "adminApi",
   baseQuery: fetchBaseQuery({ baseUrl: "/api/" }),
-  tagTypes: ["AdminOverview", "Announcement", "Account"],
+  tagTypes: ["AdminOverview", "Account"],
   endpoints: (builder) => ({
     getAdminOverview: builder.query<AdminOverview, void>({
       query: () => "admin/overview",
@@ -75,19 +78,7 @@ export const adminApi = createApi({
             ]
           : [{ type: "Account" as const, id: "LIST" }],
     }),
-    publishAnnouncement: builder.mutation<AnnouncementResponse, AnnouncementDraft>({
-      query: (body) => ({
-        url: "admin/announcements",
-        method: "POST",
-        body,
-      }),
-      invalidatesTags: [{ type: "Announcement", id: "LIST" }],
-    }),
   }),
 });
 
-export const {
-  useGetAdminOverviewQuery,
-  useGetAccountsQuery,
-  usePublishAnnouncementMutation,
-} = adminApi;
+export const { useGetAdminOverviewQuery, useGetAccountsQuery } = adminApi;

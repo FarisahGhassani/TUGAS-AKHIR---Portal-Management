@@ -3,7 +3,7 @@ import "./globals.css";
 import { Providers } from "@/store/Providers";
 
 export const metadata: Metadata = {
-  title: "PORTAL MANAGEMENT — Agency Modelling & Talent",
+  title: "PORTAL MANAGEMENT · Agency Modelling & Talent",
   description:
     "Portal Management mengelola roster talent, batch kelas modelling, dan inquiry client dalam satu website terpusat yang modern",
 };

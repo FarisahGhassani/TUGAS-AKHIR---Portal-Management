@@ -21,7 +21,7 @@ const categories: { label: string; value: TalentWorkCategory | "all" }[] = [
 ];
 
 const selectClass =
-  "w-full bg-transparent border-b border-outline-variant text-primary text-label-uppercase uppercase py-2 focus:outline-none focus:border-primary cursor-pointer transition-colors";
+  "w-full bg-transparent border-b border-outline-variant text-primary text-label-uppercase uppercase py-2 focus:outline-none focus:border-accent cursor-pointer transition-colors";
 
 type Props = {
   search: string;
@@ -68,7 +68,7 @@ export function TalentFilters({
       </div>
 
       {/* Active scope */}
-      <span className="self-start text-label-uppercase uppercase text-primary border-b border-primary pb-1">
+      <span className="self-start text-label-uppercase uppercase text-primary border-b-2 border-accent pb-1">
         ALL
       </span>
 

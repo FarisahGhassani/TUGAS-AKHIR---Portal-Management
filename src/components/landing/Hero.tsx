@@ -1,31 +1,72 @@
 "use client";
 
-import Image from "next/image";
+import { useEffect } from "react";
 import type { LandingContent } from "@/store/api/landingApi";
-import { useAppSelector } from "@/store/hooks";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { setHeroRevealed } from "@/store/slices/uiSlice";
 
 type Props = {
   data: LandingContent["hero"];
-  essence: LandingContent["essence"];
 };
 
-export function Hero({ data, essence }: Props) {
+const WORDMARK = "PORTAL";
+
+export function Hero({ data }: Props) {
+  const dispatch = useAppDispatch();
   const marqueeItems = useAppSelector((s) => s.ui.marqueeItems);
+  const heroRevealed = useAppSelector((s) => s.ui.heroRevealed);
   const loop = [...marqueeItems, ...marqueeItems, ...marqueeItems];
 
+  // Trigger the pop-up once the hero mounts (i.e. when the landing page opens,
+  // after the RTK Query landing data has resolved). Reset on unmount so the
+  // reveal replays the next time the page is visited.
+  useEffect(() => {
+    const id = requestAnimationFrame(() => dispatch(setHeroRevealed(true)));
+    return () => {
+      cancelAnimationFrame(id);
+      dispatch(setHeroRevealed(false));
+    };
+  }, [dispatch]);
+
   return (
-    <section className="w-full pt-4 md:pt-6">
-      {/* Giant wordmark — single line, edge-to-edge */}
+    // "Sandwich" hero that fills one screen: giant wordmark on top (the nav bar
+    // layers over its crown), a full-bleed image fills the remaining height, and
+    // the RTK-driven marquee caps the bottom. On md+ the section tucks up under
+    // the sticky nav (-mt-20) so the menu line overlaps the wordmark.
+    <section
+      className={`relative flex flex-col min-h-[100svh] ${
+        heroRevealed ? "hero-revealed" : ""
+      }`}
+    >
+      {/* Top of the sandwich — edge-to-edge wordmark, cropped left/right.
+          On md+ its top slips behind the sticky nav (z-50), so the nav/submenu
+          line reads as a layer stacked over the word. */}
       <h1
-        className="font-display text-primary uppercase leading-[0.85] tracking-[-0.04em] font-bold px-margin-mobile md:px-margin-desktop"
-        style={{ fontSize: "clamp(75px, 22vw, 320px)" }}
+        className="font-display text-primary uppercase font-bold tracking-[-0.04em] leading-[0.82] text-center whitespace-nowrap overflow-hidden shrink-0 pt-2 md:pt-0"
+        style={{ fontSize: "clamp(110px, 24vw, 420px)" }}
       >
-        PORTAL
+        <span className="hero-reveal-pop block">{WORDMARK}</span>
       </h1>
 
-      {/* Marquee strip — bullet-separated, infinite scroll, driven by RTK slice */}
-      <div className="relative w-full overflow-hidden mt-2 md:mt-4">
-        <div className="marquee-track flex w-max whitespace-nowrap will-change-transform py-2 md:py-3">
+      {/* Filling — full-width editorial video grows to take the leftover height
+          (object-cover so any aspect ratio fills without distortion). The hero
+          image doubles as the poster while the clip loads. */}
+      <div className="relative w-full flex-1 min-h-0 overflow-hidden group">
+        <video
+          src={data.video}
+          poster={data.image}
+          aria-label={data.imageAlt}
+          autoPlay
+          muted
+          loop
+          playsInline
+          className="absolute inset-0 h-full w-full object-cover object-center"
+        />
+      </div>
+
+      {/* Bottom of the sandwich — bullet-separated marquee, driven by RTK slice */}
+      <div className="relative w-full overflow-hidden border-y border-outline-variant shrink-0">
+        <div className="marquee-track flex w-max whitespace-nowrap will-change-transform py-2.5 md:py-3">
           {loop.map((item, i) => (
             <span
               key={`${item}-${i}`}
@@ -39,32 +80,6 @@ export function Hero({ data, essence }: Props) {
               {item}
             </span>
           ))}
-        </div>
-      </div>
-
-      {/* Editorial split: essence copy (about) left, image right */}
-      <div
-        id="essence"
-        className="grid grid-cols-1 md:grid-cols-12 gap-gutter px-margin-mobile md:px-margin-desktop mt-12 md:mt-20 scroll-mt-24"
-      >
-        <div className="md:col-span-5 flex flex-col justify-end pb-6">
-          <p className="text-label-uppercase text-secondary mb-6 uppercase">
-            {essence.eyebrow}
-          </p>
-          <p className="text-body-lg text-on-surface max-w-prose">
-            {essence.body}
-          </p>
-        </div>
-
-        <div className="md:col-span-7 relative aspect-[4/5] md:aspect-[5/6] w-full overflow-hidden">
-          <Image
-            src={data.image}
-            alt={data.imageAlt}
-            fill
-            priority
-            sizes="(min-width: 768px) 58vw, 100vw"
-            className="object-cover"
-          />
         </div>
       </div>
     </section>

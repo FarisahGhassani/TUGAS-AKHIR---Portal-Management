@@ -1,21 +1,44 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { LoginForm } from "./LoginForm";
-import { RegisterForm } from "./RegisterForm";
+import { RegisterForm, type AuthIntent } from "./RegisterForm";
 import { ForgotPasswordForm } from "./ForgotPasswordForm";
+import { useAppSelector } from "@/store/hooks";
+import { tujuanSetelahLogin } from "@/lib/navigasiRole";
 
 type Tab = "login" | "register";
 
+// Ambil "intent" dari URL (?intent=agency / ?intent=class). Selain itu → null.
+function bacaIntent(nilai: string | null): AuthIntent {
+  return nilai === "agency" || nilai === "class" ? nilai : null;
+}
+
 export function AuthCard() {
-  const [tab, setTab] = useState<Tab>("login");
-  // "Forgot password" is a sub-view of the login tab.
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const intent = bacaIntent(searchParams.get("intent"));
+
+  // Kalau user UDAH login terus nyasar ke /auth (misal klik APPLY/JOIN lagi),
+  // langsung lempar ke halaman sesuai role-nya — gak usah nampilin form lagi.
+  const user = useAppSelector((s) => s.auth.user);
+  useEffect(() => {
+    if (user) router.replace(tujuanSetelahLogin(user.role));
+  }, [user, router]);
+
+  // Kalau dateng dari tombol talent (agency/class), buka tab daftar duluan.
+  const [tab, setTab] = useState<Tab>(intent ? "register" : "login");
+  // "Forgot password" itu sub-tampilan dari tab login.
   const [showForgot, setShowForgot] = useState(false);
 
   function selectTab(next: Tab) {
     setTab(next);
     setShowForgot(false);
   }
+
+  // Lagi proses redirect (user udah login) → jangan kedip-in form dulu.
+  if (user) return null;
 
   return (
     <div className="w-full space-y-8">
@@ -59,7 +82,7 @@ export function AuthCard() {
         hidden={tab !== "register"}
         aria-labelledby="auth-tab-register"
       >
-        {tab === "register" && <RegisterForm />}
+        {tab === "register" && <RegisterForm intent={intent} />}
       </div>
     </div>
   );
@@ -86,7 +109,7 @@ function TabButton({
       className={`py-3 text-label-uppercase uppercase tracking-[0.15em] transition-colors ${
         active
           ? "bg-primary text-on-primary"
-          : "bg-transparent text-secondary hover:text-primary"
+          : "bg-transparent text-secondary hover:text-accent"
       }`}
     >
       {children}

@@ -16,5 +16,9 @@ export const agencyInfo: AgencyInfo = {
       handle: "@portal.management",
       url: "https://www.instagram.com/portal.management",
     },
+    tiktok: {
+      handle: "@portal.management",
+      url: "https://www.tiktok.com/@portal.management",
+    },
   },
 };

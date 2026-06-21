@@ -16,6 +16,10 @@ export type AgencyInfo = {
       handle: string;
       url: string;
     };
+    tiktok: {
+      handle: string;
+      url: string;
+    };
   };
 };
 

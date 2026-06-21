@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { NavBar } from "@/components/NavBar";
 import { Footer } from "@/components/Footer";
 import { Hero } from "@/components/landing/Hero";
@@ -10,6 +11,17 @@ import { useGetLandingQuery } from "@/store/api/landingApi";
 
 export default function HomePage() {
   const { data, isLoading, isError } = useGetLandingQuery();
+
+  // When arriving with a hash (e.g. /#essence from another page), scroll to the
+  // target once the content has actually rendered.
+  useEffect(() => {
+    if (!data) return;
+    const id = window.location.hash.slice(1);
+    if (!id) return;
+    requestAnimationFrame(() => {
+      document.getElementById(id)?.scrollIntoView();
+    });
+  }, [data]);
 
   if (isLoading || !data) {
     return (
@@ -41,11 +53,13 @@ export default function HomePage() {
 
   return (
     <>
-      <NavBar />
+      {/* Landing nav floats over the hero wordmark rather than sitting as a top
+          bar, see NavBar's `overlay` variant. */}
+      <NavBar overlay />
       <main>
-        <Hero data={data.hero} essence={data.essence} />
-        <Capabilities data={data.capabilities} />
+        <Hero data={data.hero} />
         <Announcements />
+        <Capabilities essence={data.essence} capabilities={data.capabilities} />
         <CTASection data={data.cta} />
       </main>
       <Footer />

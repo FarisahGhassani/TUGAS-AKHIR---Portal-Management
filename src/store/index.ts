@@ -3,6 +3,7 @@ import { setupListeners } from "@reduxjs/toolkit/query";
 import { landingApi } from "./api/landingApi";
 import { authApi } from "./api/authApi";
 import { talentApi } from "./api/talentApi";
+import { projectsApi } from "./api/projectsApi";
 import { dashboardApi } from "./api/dashboardApi";
 import { adminApi } from "./api/adminApi";
 import { announcementsApi } from "./api/announcementsApi";
@@ -16,6 +17,7 @@ export const store = configureStore({
     [landingApi.reducerPath]: landingApi.reducer,
     [authApi.reducerPath]: authApi.reducer,
     [talentApi.reducerPath]: talentApi.reducer,
+    [projectsApi.reducerPath]: projectsApi.reducer,
     [dashboardApi.reducerPath]: dashboardApi.reducer,
     [adminApi.reducerPath]: adminApi.reducer,
     [announcementsApi.reducerPath]: announcementsApi.reducer,
@@ -29,6 +31,7 @@ export const store = configureStore({
       landingApi.middleware,
       authApi.middleware,
       talentApi.middleware,
+      projectsApi.middleware,
       dashboardApi.middleware,
       adminApi.middleware,
       announcementsApi.middleware,

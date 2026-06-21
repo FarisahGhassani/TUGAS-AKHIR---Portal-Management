@@ -3,6 +3,10 @@
 @theme {
   /* === Editorial Noir colors === */
   --color-primary: #000000;
+  /* Portal Management brand green — used sparingly as an identity accent
+     (link hovers, status dots, key CTA), never as a dominant fill. */
+  --color-accent: #003825;
+  --color-on-accent: #ffffff;
   --color-on-primary: #ffffff;
   --color-primary-container: #1b1b1b;
   --color-on-primary-container: #848484;
@@ -89,7 +93,11 @@
   --spacing-margin-tablet: 32px;
   --spacing-margin-desktop: 64px;
   --spacing-gutter: 24px;
-  --spacing-section: 120px;
+  /* Vertical rhythm between sections. Kept deliberately tight so a page's
+     content fills roughly one viewport without large empty bands — the old
+     120px (=240px top+bottom per section) left pages feeling hollow and forced
+     excess scrolling. */
+  --spacing-section: 64px;
 
   /* === Container === */
   --container-editorial: 1440px;
@@ -103,6 +111,16 @@
   --radius-2xl: 0;
   --radius-3xl: 0;
   --radius-4xl: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
 }
 
 html,
@@ -140,6 +158,41 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .marquee-track {
+    animation: none;
+  }
+}
+
+/* Hero reveal — the PORTAL wordmark pops in as one word when the landing page
+   opens, orchestrated by the RTK ui.heroRevealed flag. The wordmark starts
+   hidden; when the parent gains `.hero-revealed` it animates in — driving it off
+   the parent class avoids any flash of un-animated content before the reveal. */
+@keyframes hero-pop {
+  from {
+    transform: translateY(120%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* The wordmark sits below a clipping mask (overflow-hidden on the parent) and
+   slides up into view — a clean agency-style reveal, no fade. */
+.hero-reveal-pop {
+  display: block;
+  transform: translateY(120%);
+  will-change: transform;
+}
+
+.hero-revealed .hero-reveal-pop {
+  animation: hero-pop 1.2s cubic-bezier(0.65, 0, 0.35, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-reveal-pop {
+    transform: none;
+  }
+
+  .hero-revealed .hero-reveal-pop {
     animation: none;
   }
 }

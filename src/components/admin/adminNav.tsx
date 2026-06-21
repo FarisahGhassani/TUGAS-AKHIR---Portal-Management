@@ -40,3 +40,6 @@ export const adminSections: DashboardNavSection[] = [
 export const adminFooterItems = [
   { label: "SETTINGS", href: "/admin/settings", icon: <SettingsIcon /> },
 ];
+
+
+

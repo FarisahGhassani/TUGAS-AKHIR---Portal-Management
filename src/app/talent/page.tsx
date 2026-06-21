@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { NavBar } from "@/components/NavBar";
 import { Footer } from "@/components/Footer";
 import { TalentCard } from "@/components/talent/TalentCard";
@@ -39,19 +40,38 @@ export default function TalentCatalogPage() {
   return (
     <>
       <NavBar />
-      <main className="flex-grow px-margin-mobile md:px-margin-desktop py-section max-w-editorial mx-auto w-full">
+      <main className="flex-grow px-margin-mobile md:px-margin-desktop py-10 md:py-12 max-w-editorial mx-auto w-full">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-gutter lg:gap-12">
           {/* Sidebar: title + filters (≈1/4, sticky) */}
-          <aside className="lg:col-span-1 lg:sticky lg:top-24 lg:self-start flex flex-col gap-10">
+          <aside className="lg:col-span-1 lg:sticky lg:top-24 lg:self-start flex flex-col gap-8">
             <div>
               <h1 className="font-display text-headline-lg-mobile md:text-headline-lg text-primary uppercase leading-[0.95]">
                 <span className="block">OUR</span>
                 <span className="block">TALENTS</span>
               </h1>
-              <p className="text-body-md text-secondary mt-6">
+              <p className="text-body-md text-secondary mt-4">
                 Discover the faces of Portal Management.
               </p>
             </div>
+
+            {/* Ajakan buat brand/client biar nge-hire talent. Nuju /collaboration
+                yang udah dijaga RoleGate khusus client — kalau belum login /
+                bukan client, otomatis diarahin ke halaman login dulu. */}
+            <div className="border border-outline-variant p-6 flex flex-col gap-4">
+              <p className="text-label-uppercase text-secondary uppercase">
+                FOR BRANDS & CLIENTS
+              </p>
+              <p className="text-body-md text-secondary">
+                Found the right face? Hire our talent for your next project.
+              </p>
+              <Link
+                href="/collaboration"
+                className="inline-block text-center text-label-uppercase text-on-primary bg-primary px-6 py-4 hover:bg-accent transition-colors uppercase"
+              >
+                HIRE TALENT
+              </Link>
+            </div>
+
             <TalentFilters
               search={search}
               onSearchChange={(v) => {
@@ -101,11 +121,11 @@ export default function TalentCatalogPage() {
                   ))}
                 </div>
                 {showLoadMore && (
-                  <div className="mt-16 flex justify-center">
+                  <div className="mt-10 flex justify-center">
                     <button
                       type="button"
                       onClick={() => setVisibleCount((v) => v + 8)}
-                      className="text-label-uppercase text-primary border border-primary px-8 py-4 hover:bg-primary hover:text-on-primary transition-colors uppercase"
+                      className="text-label-uppercase text-primary border border-primary px-8 py-4 hover:bg-accent hover:text-on-accent hover:border-accent transition-colors uppercase"
                     >
                       LOAD MORE TALENT
                     </button>

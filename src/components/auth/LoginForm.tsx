@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useLoginMutation } from "@/store/api/authApi";
 import { useAppDispatch } from "@/store/hooks";
 import { setCredentials } from "@/store/slices/authSlice";
+import { tujuanSetelahLogin } from "@/lib/navigasiRole";
 
 export function LoginForm({
   onForgotPassword,
@@ -24,13 +25,8 @@ export function LoginForm({
     try {
       const result = await login({ email, password }).unwrap();
       dispatch(setCredentials(result));
-      const destination =
-        result.user.role === "admin"
-          ? "/admin"
-          : result.user.role === "talent"
-            ? "/dashboard"
-            : "/talent";
-      router.push(destination);
+      // Arahin ke halaman sesuai role: talent → dashboard, client → katalog, dst.
+      router.push(tujuanSetelahLogin(result.user.role));
     } catch (err) {
       const message =
         err && typeof err === "object" && "data" in err
@@ -103,7 +99,7 @@ export function LoginForm({
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full bg-primary text-on-primary text-label-uppercase py-4 px-8 hover:opacity-70 transition-opacity flex items-center justify-center gap-2 uppercase disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full bg-primary text-on-primary text-label-uppercase py-4 px-8 hover:bg-accent transition-colors flex items-center justify-center gap-2 uppercase disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isLoading ? "AUTHENTICATING…" : "LOGIN"}
           {!isLoading && (

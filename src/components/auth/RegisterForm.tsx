@@ -5,15 +5,24 @@ import { useRouter } from "next/navigation";
 import { useRegisterMutation } from "@/store/api/authApi";
 import { useAppDispatch } from "@/store/hooks";
 import { setCredentials } from "@/store/slices/authSlice";
+import { tujuanSetelahLogin } from "@/lib/navigasiRole";
 
-export function RegisterForm() {
+// "intent" = niat user pas dateng dari tombol di landing:
+//   "agency" → mau gabung jadi talent, "class" → mau ikut kelas modelling.
+// Dua-duanya tetap butuh akun talent, jadi kalau ada intent ini, role-nya
+// langsung kita preselect "talent" biar user gak perlu milih lagi.
+export type AuthIntent = "agency" | "class" | null;
+
+export function RegisterForm({ intent }: { intent?: AuthIntent }) {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const [register, { isLoading }] = useRegisterMutation();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<"talent" | "client" | "">("");
+  const [role, setRole] = useState<"talent" | "client" | "">(
+    intent ? "talent" : "",
+  );
   const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -26,7 +35,7 @@ export function RegisterForm() {
     try {
       const result = await register({ name, email, password, role }).unwrap();
       dispatch(setCredentials(result));
-      router.push(role === "talent" ? "/dashboard" : "/talent");
+      router.push(tujuanSetelahLogin(result.user.role));
     } catch (err) {
       const message =
         err && typeof err === "object" && "data" in err
@@ -44,7 +53,11 @@ export function RegisterForm() {
           CREATE ACCOUNT
         </h2>
         <p className="text-body-md text-secondary">
-          For aspiring talent and casting clients alike.
+          {intent === "class"
+            ? "Create your talent account to enroll in modelling classes."
+            : intent === "agency"
+              ? "Create your talent account to join the agency roster."
+              : "For aspiring talent and casting clients alike."}
         </p>
       </header>
       <form className="space-y-6" onSubmit={handleSubmit} noValidate>
@@ -144,7 +157,7 @@ export function RegisterForm() {
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full bg-transparent border border-primary text-primary text-label-uppercase py-4 px-8 hover:bg-surface-container transition-colors flex items-center justify-center gap-2 uppercase disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full bg-transparent border border-primary text-primary text-label-uppercase py-4 px-8 hover:bg-accent hover:text-on-accent hover:border-accent transition-colors flex items-center justify-center gap-2 uppercase disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isLoading ? "CREATING ACCOUNT…" : "CREATE ACCOUNT"}
         </button>

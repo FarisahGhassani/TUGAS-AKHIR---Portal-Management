@@ -1,10 +1,10 @@
 import type {
-  AdminOverview,
+  OverviewData,
   ClientInquiry,
   TalentApplication,
 } from "@/store/api/adminApi";
 
-export const adminOverview: AdminOverview = {
+export const adminOverview: OverviewData = {
   metrics: {
     activeTalent: 142,
     pendingApplications: 28,

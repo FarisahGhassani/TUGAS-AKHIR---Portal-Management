@@ -7,6 +7,7 @@ export const landingContent: LandingContent = {
       "https://images.unsplash.com/photo-1488161628813-04466f872be2?auto=format&fit=crop&w=1800&q=80",
     imageAlt:
       "High-fashion editorial portrait of a model rendered in dramatic black and white.",
+    video: "/videos/portal-asset.mp4",
   },
   essence: {
     eyebrow: "OUR ESSENCE",
@@ -44,7 +45,7 @@ export const landingContent: LandingContent = {
   },
   cta: {
     title: "BECOME A FACE OF THE FUTURE",
-    body: "We are continually seeking unique individuals with exceptional potential to join our exclusive roster.",
+    body: "We are continually seeking unique individuals with exceptional potential to join our agency.",
     buttonLabel: "JOIN THE AGENCY",
   },
 };

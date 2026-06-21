@@ -19,7 +19,7 @@ export function TalentCard({ talent }: { talent: TalentSummary }) {
         alt={talent.coverAlt}
         fill
         sizes="(min-width: 1024px) 25vw, (min-width: 768px) 50vw, 100vw"
-        className="object-cover grayscale transition-transform duration-700 group-hover:scale-105"
+        className="object-cover transition-all duration-700 group-hover:scale-105 group-hover:grayscale"
       />
       <div className="absolute inset-0 bg-primary/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-6">
         <h3 className="font-display text-headline-md text-on-primary mb-2 uppercase">

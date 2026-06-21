@@ -5,7 +5,7 @@ export const talents: Talent[] = [
     id: "t-anya",
     slug: "anya-taylor",
     name: "ANYA TAYLOR",
-    bio: "A main-board talent known for her sculptural presence and editorial range — equally at home on the runway and in beauty campaigns. Represented exclusively by Portal Management.",
+    bio: "A main-board talent known for her sculptural presence and editorial range, equally at home on the runway and in beauty campaigns. Represented exclusively by Portal Management.",
     division: "main",
     gender: "female",
     categories: ["photoshoot", "runway", "muse-beauty"],
@@ -126,7 +126,7 @@ export const talents: Talent[] = [
       },
       {
         id: "sofia-2",
-        caption: "MAISON ROUGE — SS25",
+        caption: "MAISON ROUGE · SS25",
         category: "campaign",
         span: "tall",
         image:
@@ -223,7 +223,7 @@ export const talents: Talent[] = [
     id: "t-kiah",
     slug: "kiah-winters",
     name: "KIAH WINTERS",
-    bio: "A development talent with a striking, gender-fluid aesthetic that thrives under dramatic light — runway and beauty alike.",
+    bio: "A development talent with a striking, gender-fluid aesthetic that thrives under dramatic light, runway and beauty alike.",
     division: "development",
     gender: "non-binary",
     categories: ["runway", "photoshoot", "muse-beauty"],

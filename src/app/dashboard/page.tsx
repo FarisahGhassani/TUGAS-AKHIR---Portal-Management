@@ -3,7 +3,13 @@
 import Link from "next/link";
 import { NavBar } from "@/components/NavBar";
 import { Footer } from "@/components/Footer";
-import { Announcements } from "@/components/landing/Announcements";
+import { RoleGate } from "@/components/auth/RoleGate";
+import { Modal } from "@/components/Modal";
+import { RegistrationCard } from "@/components/dashboard/RegistrationCard";
+import { TalentRegistrationForm } from "@/components/dashboard/TalentRegistrationForm";
+import { ClassRegistrationForm } from "@/components/dashboard/ClassRegistrationForm";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { closeRegModal } from "@/store/slices/uiSlice";
 import {
   useGetDashboardSummaryQuery,
   type ApplicationStatus,
@@ -58,12 +64,34 @@ function formatDate(iso: string) {
 }
 
 export default function DashboardPage() {
-  const { data, isLoading, isError } = useGetDashboardSummaryQuery();
+  // Sumber kebenaran role = auth state di Redux (RTK). Data dashboard hanya
+  // diambil untuk talent; akun lain ditahan RoleGate sebelum query berjalan.
+  const isTalent = useAppSelector((s) => s.auth.user?.role === "talent");
+  // Nama hero diambil dari akun yang SEDANG login (auth/RTK), bukan dari data
+  // mock dashboard — dulu selalu "ELARA" walau ganti akun. Ini sumber bug itu.
+  const userName = useAppSelector((s) => s.auth.user?.name);
+  // Modal pendaftaran yang sedang terbuka (talent | kelas | null) dari ui slice.
+  const regModal = useAppSelector((s) => s.ui.regModal);
+  const dispatch = useAppDispatch();
+  const { data, isLoading, isError } = useGetDashboardSummaryQuery(undefined, {
+    skip: !isTalent,
+  });
+
+  const close = () => dispatch(closeRegModal());
+
+  // Riwayat digabung lalu diurut terbaru dulu — kartu pendaftaran sudah
+  // memisahkan jenisnya, jadi histori cukup satu aliran kronologis.
+  const history = data
+    ? [...data.applications].sort(
+        (a, b) => new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime(),
+      )
+    : [];
 
   return (
     <>
       <NavBar />
       <main className="flex-grow">
+        <RoleGate allow="talent">
         {isLoading || !data ? (
           <p className="px-margin-mobile md:px-margin-desktop py-section text-label-uppercase text-on-surface-variant uppercase">
             Loading your space…
@@ -74,154 +102,123 @@ export default function DashboardPage() {
           </p>
         ) : (
           <>
-            {/* Personalized hero — landing-style wordmark */}
+            {/* Personalized hero — wordmark dikecilkan supaya dua kartu
+                pendaftaran di bawahnya ikut terlihat tanpa banyak scroll. */}
             <section className="w-full pt-6 md:pt-10 px-margin-mobile md:px-margin-desktop max-w-editorial mx-auto">
-              <p className="text-label-uppercase text-secondary uppercase mb-4">
+              <p className="text-label-uppercase text-secondary uppercase mb-3">
                 WELCOME BACK
               </p>
               <h1
                 className="font-display text-primary uppercase leading-[0.85] tracking-[-0.04em] font-bold"
-                style={{ fontSize: "clamp(64px, 18vw, 240px)" }}
+                style={{ fontSize: "clamp(48px, 11vw, 132px)" }}
               >
-                {data.greeting.name}
+                {userName ?? data.greeting.name}
               </h1>
-              <p className="text-body-lg text-secondary max-w-prose mt-6">
+              <p className="text-body-lg text-secondary max-w-prose mt-5">
                 {data.greeting.subtitle}
               </p>
             </section>
 
-            {/* MY ACTIVITY — the talent-specific dashboard */}
-            <section className="px-margin-mobile md:px-margin-desktop pt-section pb-section max-w-editorial mx-auto">
-              <p className="text-label-uppercase text-secondary uppercase mb-3">
-                MY ACTIVITY
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-gutter mb-section">
-                <SummaryCard
-                  label="TALENT APPLICATION"
-                  value={
-                    applicationStatus[
-                      data.applications.find((a) => a.jenis === "talent")
-                        ?.status ?? "pending"
-                    ].label
-                  }
-                  valueAsHeadline
+            {/* Dua kartu pendaftaran sejajar kiri–kanan — klik untuk membuka
+                modal form-nya. Tanpa penomoran 01/02; keduanya setara. */}
+            <section className="px-margin-mobile md:px-margin-desktop pt-8 md:pt-10 pb-12 max-w-editorial mx-auto">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-gutter">
+                <RegistrationCard
+                  panelKey="talent"
+                  heading="Ready to Unlock Your Potential?"
+                  body="At Portal Management, we're always looking for fresh faces with confidence, personality, and potential. Whether you're experienced or just starting out, this could be the first step in your modelling journey."
                 />
-                <SummaryCard
-                  label="CLASSES JOINED"
-                  value={data.classes.length.toString().padStart(2, "0")}
+                <RegistrationCard
+                  panelKey="kelas"
+                  heading="Build Confidence. Learn from the Experts."
+                  body="Learn catwalk, posing, personal branding, and photoshoot techniques directly from experienced mentors in a supportive and professional environment. Receive a certificate upon completion."
                 />
-                <SummaryCard
-                  label="CERTIFICATES"
-                  value={data.classes
-                    .filter((c) => c.sertifikatUrl)
-                    .length.toString()
-                    .padStart(2, "0")}
-                />
-              </div>
-
-              {/* Riwayat apply + status */}
-              <div className="mb-section">
-                <div className="flex justify-between items-end mb-8 border-b border-outline-variant pb-4">
-                  <h2 className="font-display text-headline-md text-primary uppercase">
-                    APPLICATION HISTORY
-                  </h2>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse min-w-[600px]">
-                    <thead>
-                      <tr className="border-b border-outline-variant">
-                        <th className="py-4 text-label-uppercase text-secondary font-normal w-1/5 uppercase">
-                          DATE
-                        </th>
-                        <th className="py-4 text-label-uppercase text-secondary font-normal uppercase">
-                          APPLICATION
-                        </th>
-                        <th className="py-4 text-label-uppercase text-secondary font-normal w-1/5 text-right uppercase">
-                          STATUS
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {data.applications.map((app) => (
-                        <ApplicationRow key={app.id} app={app} />
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              {/* Kelas modelling yang diikuti */}
-              <div>
-                <div className="flex justify-between items-end mb-8 border-b border-outline-variant pb-4">
-                  <h2 className="font-display text-headline-md text-primary uppercase">
-                    MODELLING CLASSES
-                  </h2>
-                </div>
-                {data.classes.length === 0 ? (
-                  <p className="text-label-uppercase text-on-surface-variant uppercase">
-                    You haven’t joined any class yet.
-                  </p>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-gutter">
-                    {data.classes.map((cls) => (
-                      <ClassCard key={cls.id} cls={cls} />
-                    ))}
-                  </div>
-                )}
               </div>
             </section>
 
-            {/* Pengumuman publik tetap tampil, seperti landing page */}
-            <Announcements />
+            {/* Riwayat pendaftaran — gabungan talent & kelas, terbaru di atas. */}
+            <section className="px-margin-mobile md:px-margin-desktop pb-12 max-w-editorial mx-auto">
+              <div className="flex justify-between items-end mb-6 border-b border-outline-variant pb-4">
+                <h2 className="font-display text-headline-md text-primary uppercase">
+                  APPLICATION HISTORY
+                </h2>
+              </div>
+              {history.length === 0 ? (
+                <p className="text-label-uppercase text-on-surface-variant uppercase">
+                  No applications yet. Pick a card above to get started.
+                </p>
+              ) : (
+                <div className="flex flex-col gap-gutter">
+                  {history.map((app) => (
+                    <ApplicationStatusCard key={app.id} app={app} />
+                  ))}
+                </div>
+              )}
+            </section>
+
+            {/* Kelas modelling yang sudah diikuti — sertifikat bisa diunduh
+                untuk batch yang sudah lulus. */}
+            <section className="px-margin-mobile md:px-margin-desktop pb-12 max-w-editorial mx-auto">
+              <div className="flex justify-between items-end mb-6 border-b border-outline-variant pb-4">
+                <h2 className="font-display text-headline-md text-primary uppercase">
+                  MODELLING CLASSES
+                </h2>
+              </div>
+              {data.classes.length === 0 ? (
+                <p className="text-label-uppercase text-on-surface-variant uppercase">
+                  You haven’t joined any class yet.
+                </p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-gutter">
+                  {data.classes.map((cls) => (
+                    <ClassCard key={cls.id} cls={cls} />
+                  ))}
+                </div>
+              )}
+            </section>
+
+            {/* Modal form — disetir penuh oleh ui slice (RTK). */}
+            <Modal
+              open={regModal === "talent"}
+              onClose={close}
+              title="APPLY AS TALENT"
+            >
+              <TalentRegistrationForm />
+            </Modal>
+            <Modal
+              open={regModal === "kelas"}
+              onClose={close}
+              title="JOIN MODELLING CLASS"
+            >
+              <ClassRegistrationForm />
+            </Modal>
           </>
         )}
+        </RoleGate>
       </main>
       <Footer />
     </>
   );
 }
 
-function SummaryCard({
-  label,
-  value,
-  valueAsHeadline,
-}: {
-  label: string;
-  value: string;
-  valueAsHeadline?: boolean;
-}) {
+function ApplicationStatusCard({ app }: { app: TalentApplication }) {
   return (
-    <div className="border border-outline-variant p-8 bg-surface-container-lowest flex flex-col justify-between aspect-[4/3]">
-      <h3 className="text-label-uppercase text-secondary uppercase">{label}</h3>
-      <p
-        className={`font-display ${
-          valueAsHeadline ? "text-headline-md" : "text-headline-lg-mobile"
-        } text-primary uppercase leading-none`}
-      >
-        {value}
-      </p>
-    </div>
-  );
-}
-
-function ApplicationRow({ app }: { app: TalentApplication }) {
-  return (
-    <tr className="border-b border-surface-container">
-      <td className="py-6 text-body-md text-primary whitespace-nowrap">
-        {formatDate(app.tanggal)}
-      </td>
-      <td className="py-6">
-        <span className="text-label-uppercase text-secondary uppercase mr-3 border border-outline-variant px-2 py-0.5">
-          {typeLabel[app.jenis]}
-        </span>
-        <span className="font-display text-headline-md text-primary uppercase">
-          {app.judul}
-        </span>
-      </td>
-      <td className="py-6 text-right">
+    <article className="border border-outline-variant p-6 flex flex-col gap-4">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-label-uppercase text-secondary uppercase mb-2">
+            {typeLabel[app.jenis]}
+          </p>
+          <h3 className="font-display text-headline-md text-primary uppercase">
+            {app.judul}
+          </h3>
+        </div>
         <StatusBadge {...applicationStatus[app.status]} />
-      </td>
-    </tr>
+      </div>
+      <p className="text-caption text-secondary uppercase tracking-[0.1em]">
+        Submitted {formatDate(app.tanggal)}
+      </p>
+    </article>
   );
 }
 
@@ -236,7 +233,7 @@ function ClassCard({ cls }: { cls: TalentClass }) {
           {cls.namaBatch}
         </h3>
         <p className="text-body-md text-secondary mt-3">
-          {formatDate(cls.tglMulai)} — {formatDate(cls.tglBerakhir)}
+          {formatDate(cls.tglMulai)} – {formatDate(cls.tglBerakhir)}
         </p>
       </div>
       <div className="flex flex-wrap gap-3">
@@ -246,7 +243,7 @@ function ClassCard({ cls }: { cls: TalentClass }) {
       {cls.statusKelulusan === "lulus" && cls.sertifikatUrl && (
         <Link
           href={cls.sertifikatUrl}
-          className="self-start text-label-uppercase text-primary border border-primary px-6 py-3 hover:bg-primary hover:text-on-primary transition-colors uppercase"
+          className="self-start text-label-uppercase text-primary border border-primary px-6 py-3 hover:bg-accent hover:text-on-accent hover:border-accent transition-colors uppercase"
         >
           DOWNLOAD CERTIFICATE
         </Link>

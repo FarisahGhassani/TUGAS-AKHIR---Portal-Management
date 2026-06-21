@@ -53,7 +53,7 @@ export function ForgotPasswordForm({ onBack }: { onBack: () => void }) {
         {devResetUrl && (
           <div className="border border-outline bg-surface-container p-4 space-y-2">
             <p className="text-caption text-secondary uppercase tracking-[0.1em]">
-              MODE PENGEMBANGAN — EMAIL BELUM AKTIF
+              MODE PENGEMBANGAN · EMAIL BELUM AKTIF
             </p>
             <p className="text-caption text-secondary">
               Belum ada layanan email (RESEND_API_KEY) yang dipasang, jadi
@@ -117,7 +117,7 @@ export function ForgotPasswordForm({ onBack }: { onBack: () => void }) {
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full bg-primary text-on-primary text-label-uppercase py-4 px-8 hover:opacity-70 transition-opacity uppercase disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full bg-primary text-on-primary text-label-uppercase py-4 px-8 hover:bg-accent transition-colors uppercase disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isLoading ? "MENGIRIM…" : "KIRIM TAUTAN RESET"}
         </button>

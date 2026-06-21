@@ -36,6 +36,47 @@ export type DashboardSummary = {
   classes: TalentClass[];
 };
 
+// Batch kelas modelling yang tersedia untuk didaftari (PRD: BATCH_MODELLING).
+export type ModellingBatch = {
+  id: string;
+  namaBatch: string;
+  batchKe: number;
+  kuota: number;
+  tglMulai: string;
+  tglBerakhir: string;
+  statusPendaftaran: "buka" | "tutup";
+};
+
+// Pendaftaran talent (PRD: PENDAFTARAN, jenis = "talent").
+export type TalentRegistrationInput = {
+  jenis: "talent";
+  namaTalent: string;
+  tanggalLahir: string;
+  tinggiBadan: number;
+  beratBadan: number;
+  sizeBaju: string;
+  sizeSepatu: string;
+  kartuIdentitas: string;
+  noTelepon: string;
+  fotoProfil?: string;
+  fotoPortofolio?: string;
+};
+
+// Pendaftaran kelas (PRD: PENDAFTARAN jenis = "kelas" + PENDAFTARAN_BATCH).
+export type ClassRegistrationInput = {
+  jenis: "kelas";
+  batchId: string;
+  namaTalent: string;
+  noTelepon: string;
+  buktiPembayaran?: string;
+};
+
+// Dua form berbeda, tapi keduanya menulis ke "database" pendaftaran yang sama,
+// dibedakan oleh kolom `jenis` (persis seperti tabel PENDAFTARAN di PRD).
+export type CreateApplicationRequest =
+  | TalentRegistrationInput
+  | ClassRegistrationInput;
+
 export const dashboardApi = createApi({
   reducerPath: "dashboardApi",
   baseQuery: fetchBaseQuery({ baseUrl: "/api/" }),
@@ -45,7 +86,28 @@ export const dashboardApi = createApi({
       query: () => "dashboard",
       providesTags: [{ type: "Application", id: "LIST" }],
     }),
+    // Daftar batch kelas yang bisa didaftari (untuk form modelling school).
+    getBatches: builder.query<ModellingBatch[], void>({
+      query: () => "batches",
+    }),
+    // Satu mutation untuk KEDUA form (talent & kelas) → satu store pendaftaran.
+    // Status awal selalu "pending". Invalidasi LIST supaya riwayat ter-refresh.
+    createApplication: builder.mutation<
+      TalentApplication,
+      CreateApplicationRequest
+    >({
+      query: (body) => ({
+        url: "dashboard/applications",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: [{ type: "Application", id: "LIST" }],
+    }),
   }),
 });
 
-export const { useGetDashboardSummaryQuery } = dashboardApi;
+export const {
+  useGetDashboardSummaryQuery,
+  useGetBatchesQuery,
+  useCreateApplicationMutation,
+} = dashboardApi;

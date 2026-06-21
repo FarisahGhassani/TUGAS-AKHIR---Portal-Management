@@ -47,42 +47,45 @@ export function Announcements() {
   return (
     <section className="py-section px-margin-mobile md:px-margin-desktop bg-surface-container-lowest">
       <div className="max-w-editorial mx-auto">
-        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-16 border-b border-outline-variant pb-6">
+        {/* Header — softened from the old "live programs" siren to a calm,
+            editorial news label marked only by a small brand-green dot. */}
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-6 md:mb-8">
           <div>
             <p className="text-label-uppercase text-secondary mb-3 uppercase flex items-center gap-2">
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping bg-error opacity-75" />
-                <span className="relative inline-flex h-2 w-2 bg-error" />
-              </span>
-              LIVE PROGRAMS &amp; EVENTS
+              <span
+                className="inline-block h-1.5 w-1.5 bg-accent"
+                aria-hidden="true"
+              />
+              CURRENT NEWS / EVENTS
             </p>
             <h2 className="font-display text-headline-lg-mobile md:text-headline-md text-primary uppercase">
               ANNOUNCEMENTS
             </h2>
           </div>
           {!isLoading && !isError && active.length > 0 && (
-            <p className="text-label-uppercase text-secondary uppercase">
-              {active.length} OPEN {active.length === 1 ? "PROGRAM" : "PROGRAMS"}
-            </p>
+            <span className="self-start md:self-auto border border-outline-variant px-4 py-2 text-label-uppercase text-secondary uppercase whitespace-nowrap">
+              {active.length} OPEN{" "}
+              {active.length === 1 ? "PROGRAM" : "PROGRAMS"}
+            </span>
           )}
         </div>
 
+        {/* Body — full-width stacked rows so every announcement reads across the
+            whole board instead of being boxed into narrow columns. */}
         {isLoading ? (
-          <p className="text-label-uppercase text-on-surface-variant uppercase">
+          <p className="text-label-uppercase text-on-surface-variant uppercase py-12 text-center">
             Memuat pengumuman…
           </p>
         ) : isError ? (
-          <p className="text-label-uppercase text-error uppercase">
+          <p className="text-label-uppercase text-error uppercase py-12 text-center">
             Gagal memuat pengumuman.
           </p>
         ) : active.length === 0 ? (
-          <p className="text-label-uppercase text-on-surface-variant uppercase">
-            Belum ada pengumuman aktif.
-          </p>
+          <EmptyState />
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-gutter">
+          <div className="border-t border-outline-variant">
             {active.map((announcement) => (
-              <AnnouncementCard
+              <AnnouncementRow
                 key={announcement.id}
                 announcement={announcement}
                 now={now}
@@ -95,7 +98,37 @@ export function Announcements() {
   );
 }
 
-function AnnouncementCard({
+function EmptyState() {
+  return (
+    <div className="flex flex-col items-center justify-center text-center gap-4 border border-dashed border-outline-variant py-10 px-6">
+      <span
+        className="inline-flex h-10 w-10 items-center justify-center border border-outline-variant text-secondary"
+        aria-hidden="true"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+        >
+          <path strokeLinecap="square" d="M4 5h16v14H4zM4 9h16M8 3v4M16 3v4" />
+        </svg>
+      </span>
+      <p className="text-label-uppercase text-primary uppercase">
+        Belum ada program aktif
+      </p>
+      <p className="text-body-md text-secondary max-w-prose">
+        Casting call dan kelas modelling berikutnya akan tampil di sini. Pantau
+        terus halaman ini.
+      </p>
+    </div>
+  );
+}
+
+function AnnouncementRow({
   announcement,
   now,
 }: {
@@ -108,78 +141,64 @@ function AnnouncementCard({
   return (
     <Link
       href={announcement.link}
-      className="group relative flex flex-col bg-primary text-on-primary overflow-hidden border border-primary hover:-translate-y-1 transition-transform duration-300"
+      className="group grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-gutter items-center border-b border-outline-variant py-5 md:py-6 transition-colors hover:border-accent"
     >
-      {/* === Poster event === */}
-      <div className="relative aspect-[4/5] w-full overflow-hidden">
+      {/* === Poster event — full colour, eased to grayscale on hover === */}
+      <div className="relative md:col-span-3 aspect-[4/3] md:aspect-[4/5] w-full overflow-hidden bg-surface-container">
         <Image
           src={announcement.fotoPoster}
           alt={announcement.fotoPosterAlt}
           fill
-          sizes="(min-width: 768px) 33vw, 100vw"
-          className="object-cover grayscale group-hover:grayscale-0 scale-105 group-hover:scale-110 transition-all duration-700"
+          sizes="(min-width: 768px) 25vw, 100vw"
+          className="object-cover scale-105 group-hover:scale-100 group-hover:grayscale transition-all duration-700"
         />
-        {/* Gradient supaya badge & teks tetap terbaca */}
-        <div className="absolute inset-0 bg-gradient-to-t from-primary via-primary/30 to-transparent" />
-
-        {/* Kategori program */}
-        <span className="absolute top-4 left-4 bg-on-primary text-primary px-3 py-1 text-label-uppercase uppercase">
+        <span className="absolute top-3 left-3 bg-on-primary text-primary px-3 py-1 text-label-uppercase uppercase">
           {kategoriLabel[announcement.kategori]}
-        </span>
-
-        {/* Indikator pendaftaran dibuka */}
-        <span className="absolute top-4 right-4 flex items-center gap-2 bg-primary/70 backdrop-blur-sm px-3 py-1 text-label-uppercase uppercase">
-          <span className="relative flex h-2 w-2">
-            <span className="absolute inline-flex h-full w-full animate-ping bg-on-primary opacity-75" />
-            <span className="relative inline-flex h-2 w-2 bg-on-primary" />
-          </span>
-          NOW OPEN
-        </span>
-
-        {/* Hitung mundur deadline */}
-        <span
-          className={`absolute bottom-4 left-4 px-3 py-1 text-label-uppercase uppercase ${
-            isUrgent ? "bg-error text-on-error" : "bg-on-primary text-primary"
-          }`}
-        >
-          {countdownLabel(daysLeft)}
         </span>
       </div>
 
       {/* === Detail program === */}
-      <div className="relative z-10 flex flex-1 flex-col p-6">
-        <h3 className="font-display text-headline-md mb-3 uppercase">
+      <div className="md:col-span-7 flex flex-col gap-3">
+        <span className="flex items-center gap-2 text-label-uppercase text-secondary uppercase">
+          <span className="inline-block h-1.5 w-1.5 bg-accent" aria-hidden="true" />
+          NOW OPEN
+        </span>
+        <h3 className="font-display text-headline-lg-mobile md:text-headline-md text-primary uppercase">
           {announcement.judul}
         </h3>
-        <p className="text-body-md text-on-primary/70 mb-6 line-clamp-3">
+        <p className="text-body-md text-secondary max-w-prose line-clamp-2">
           {announcement.ringkasan}
         </p>
-        <div className="mt-auto flex items-center justify-between border-t border-on-primary/20 pt-4">
-          <span
-            className={`text-label-uppercase uppercase ${
-              isUrgent ? "text-error" : "text-on-primary/70"
-            }`}
-          >
-            {isUrgent ? "CLOSING SOON — " : "DEADLINE — "}
+      </div>
+
+      {/* === Deadline + arrow === */}
+      <div className="md:col-span-2 flex items-center justify-between md:flex-col md:items-end gap-3 md:text-right">
+        <span
+          className={`text-label-uppercase uppercase ${
+            isUrgent ? "text-error" : "text-secondary"
+          }`}
+        >
+          {countdownLabel(daysLeft)}
+          <span className="block text-on-surface-variant mt-1">
             {formatDeadline(announcement.tanggalBerakhir)}
           </span>
-          <span
-            aria-hidden="true"
-            className="text-on-primary group-hover:translate-x-1 transition-transform"
+        </span>
+        <span
+          aria-hidden="true"
+          className="text-primary group-hover:text-accent group-hover:translate-x-1 transition-all"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-            >
-              <path strokeLinecap="square" d="M5 12h14M13 6l6 6-6 6" />
-            </svg>
-          </span>
-        </div>
+            <path strokeLinecap="square" d="M5 12h14M13 6l6 6-6 6" />
+          </svg>
+        </span>
       </div>
     </Link>
   );

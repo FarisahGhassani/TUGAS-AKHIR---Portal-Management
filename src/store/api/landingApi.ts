@@ -5,6 +5,7 @@ export type LandingContent = {
     title: string;
     image: string;
     imageAlt: string;
+    video: string;
   };
   essence: {
     eyebrow: string;

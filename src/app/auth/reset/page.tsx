@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ResetPasswordForm } from "@/components/auth/ResetPasswordForm";
 
 export const metadata = {
-  title: "PORTAL MANAGEMENT — Reset Password",
+  title: "PORTAL MANAGEMENT · Reset Password",
   description: "Create a new password for your Portal Management account.",
 };
 

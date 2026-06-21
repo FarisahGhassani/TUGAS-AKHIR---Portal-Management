@@ -1,12 +1,17 @@
 import { http, HttpResponse, delay } from "msw";
 import { landingContent } from "./data/landing";
 import { findTalentBySlug, listTalents } from "./data/talents";
-import { dashboardSummary } from "./data/dashboard";
-import { listActiveAnnouncements } from "./data/announcements";
+import { listProjects } from "./data/projects";
+import {
+  dashboardSummary,
+  addApplication,
+  listBatches,
+  findBatch,
+} from "./data/dashboard";
 import { agencyInfo } from "./data/agency";
 import { addInquiry, listInquiries } from "./data/inquiries";
-import type { AnnouncementDraft } from "@/store/api/adminApi";
 import type { CreateInquiryRequest } from "@/store/api/inquiryApi";
+import type { CreateApplicationRequest } from "@/store/api/dashboardApi";
 
 // NOTE: auth (login, register, forgot-password, reset-password) and the admin
 // account/overview reads are now handled by REAL Next.js Route Handlers under
@@ -24,14 +29,10 @@ export const handlers = [
     return HttpResponse.json(agencyInfo);
   }),
 
-  http.get("/api/announcements", async ({ request }) => {
-    await delay(250);
-    const url = new URL(request.url);
-    const status = url.searchParams.get("status");
-    const data =
-      status === "aktif" ? listActiveAnnouncements() : listActiveAnnouncements();
-    return HttpResponse.json(data);
-  }),
+  // NOTE: /api/announcements (+ /api/admin/announcements CRUD) kini ditangani
+  // REAL Next.js Route Handlers (src/app/api/**) yang menulis ke server store,
+  // supaya pengumuman yang dibuat admin persist & langsung tampil di landing.
+  // MSW di-bypass untuk path itu.
 
   http.get("/api/talents", async ({ request }) => {
     await delay(300);
@@ -69,9 +70,79 @@ export const handlers = [
     return HttpResponse.json(talent);
   }),
 
+  http.get("/api/projects", async ({ request }) => {
+    await delay(300);
+    const url = new URL(request.url);
+    const result = listProjects({
+      search: url.searchParams.get("search") ?? undefined,
+      type: url.searchParams.get("type") ?? undefined,
+    });
+    return HttpResponse.json(result);
+  }),
+
   http.get("/api/dashboard", async () => {
     await delay(300);
     return HttpResponse.json(dashboardSummary);
+  }),
+
+  // Daftar batch kelas yang tersedia (untuk form modelling school).
+  http.get("/api/batches", async () => {
+    await delay(200);
+    return HttpResponse.json(listBatches());
+  }),
+
+  // Dua form berbeda (talent / kelas) → satu store pendaftaran, dibedakan
+  // kolom `jenis`. Validasi field mengikuti PRD per jenis.
+  http.post("/api/dashboard/applications", async ({ request }) => {
+    await delay(450);
+    const body = (await request.json()) as CreateApplicationRequest;
+
+    if (body.jenis === "talent") {
+      const required =
+        body.namaTalent?.trim() &&
+        body.tanggalLahir &&
+        body.tinggiBadan &&
+        body.beratBadan &&
+        body.sizeBaju?.trim() &&
+        body.sizeSepatu?.trim() &&
+        body.kartuIdentitas?.trim() &&
+        body.noTelepon?.trim() &&
+        body.fotoProfil?.trim();
+      if (!required) {
+        return HttpResponse.json(
+          { message: "Please complete all required talent fields." },
+          { status: 422 },
+        );
+      }
+      const created = addApplication({
+        jenis: "talent",
+        judul: "TALENT APPLICATION",
+      });
+      return HttpResponse.json(created, { status: 201 });
+    }
+
+    if (body.jenis === "kelas") {
+      const batch = findBatch(body.batchId);
+      if (!batch || !body.noTelepon?.trim() || !body.buktiPembayaran?.trim()) {
+        return HttpResponse.json(
+          {
+            message:
+              "Select a batch and upload your payment proof to register.",
+          },
+          { status: 422 },
+        );
+      }
+      const created = addApplication({
+        jenis: "kelas",
+        judul: `KELAS BATCH ${String(batch.batchKe).padStart(2, "0")} · ${batch.namaBatch.toUpperCase()}`,
+      });
+      return HttpResponse.json(created, { status: 201 });
+    }
+
+    return HttpResponse.json(
+      { message: "Unknown application type." },
+      { status: 422 },
+    );
   }),
 
   // Client collaboration — riwayat inquiry untuk dipantau.
@@ -93,7 +164,7 @@ export const handlers = [
       return HttpResponse.json(
         {
           message:
-            "Nama, nomor telepon, judul project, dan jenis job wajib diisi.",
+            "Phone number, project title, and job type are required.",
         },
         { status: 422 },
       );
@@ -109,25 +180,5 @@ export const handlers = [
       catatanClient: body.catatanClient?.trim() || undefined,
     });
     return HttpResponse.json(created, { status: 201 });
-  }),
-
-  http.post("/api/admin/announcements", async ({ request }) => {
-    await delay(400);
-    const body = (await request.json()) as AnnouncementDraft;
-    if (!body.headline.trim() || !body.message.trim()) {
-      return HttpResponse.json(
-        { message: "Headline and message are required." },
-        { status: 422 },
-      );
-    }
-    return HttpResponse.json(
-      {
-        id: `ann-${Date.now()}`,
-        headline: body.headline,
-        message: body.message,
-        publishedAt: body.publish ? new Date().toISOString() : null,
-      },
-      { status: 201 },
-    );
   }),
 ];

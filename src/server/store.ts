@@ -19,8 +19,18 @@
 
 import { seedUsers, type StoredUser } from "@/mocks/data/users";
 import { adminOverview as seedOverview } from "@/mocks/data/admin";
+import { seedAnnouncements } from "@/mocks/data/announcements";
 import type { AuthRole, AuthUser } from "@/store/api/authApi";
-import type { AdminOverview } from "@/store/api/adminApi";
+import type {
+  AdminNotification,
+  AdminOverview,
+  ApplicationStatus,
+  OverviewData,
+} from "@/store/api/adminApi";
+import type {
+  Announcement,
+  AnnouncementInput,
+} from "@/store/api/announcementsApi";
 
 const RESET_TOKEN_TTL_MS = 15 * 60 * 1000; // tokens expire after 15 minutes
 
@@ -32,7 +42,8 @@ type ResetToken = {
 
 type Store = {
   users: StoredUser[];
-  overview: AdminOverview;
+  overview: OverviewData;
+  announcements: Announcement[];
   resetTokens: Map<string, ResetToken>;
 };
 
@@ -44,11 +55,16 @@ function createStore(): Store {
   return {
     users: structuredClone(seedUsers),
     overview: structuredClone(seedOverview),
+    announcements: structuredClone(seedAnnouncements),
     resetTokens: new Map(),
   };
 }
 
 const store = (globalForStore.__portalStore ??= createStore());
+
+// Defensif: kalau store lama (dari HMR) belum punya field yang baru ditambah,
+// isi dari seed supaya tidak undefined.
+store.announcements ??= structuredClone(seedAnnouncements);
 
 const dateFormatter = new Intl.DateTimeFormat("en-US", {
   month: "short",
@@ -154,8 +170,101 @@ export function listAccounts() {
   return { accounts, totals };
 }
 
+// Rakit feed "notifikasi terbaru" dari pendaftaran & inquiry yang sudah ada.
+// Keduanya tersimpan newest-first (unshift), jadi kita interleave bergantian
+// supaya kedua jenis sama-sama tampil di pucuk, dibatasi 6 item.
+const statusLabelId: Record<ApplicationStatus, string> = {
+  new: "baru",
+  under_review: "ditinjau",
+  approved: "disetujui",
+  declined: "ditolak",
+};
+
+function buildNotifications(overview: OverviewData): AdminNotification[] {
+  const fromApplications: AdminNotification[] = overview.applications.map(
+    (a) => ({
+      id: `n-${a.id}`,
+      kind: "application",
+      title: `Pendaftaran talent baru dari ${a.name}`,
+      detail: `${a.category} · ${statusLabelId[a.status]}`,
+      time: a.appliedAt,
+    }),
+  );
+  const fromInquiries: AdminNotification[] = overview.inquiries.map((i) => ({
+    id: `n-${i.id}`,
+    kind: "inquiry",
+    title: `Inquiry klien baru dari ${i.client}`,
+    detail: i.excerpt,
+    time: i.receivedAgo,
+  }));
+
+  const merged: AdminNotification[] = [];
+  for (let i = 0; i < Math.max(fromApplications.length, fromInquiries.length); i++) {
+    if (fromApplications[i]) merged.push(fromApplications[i]);
+    if (fromInquiries[i]) merged.push(fromInquiries[i]);
+  }
+  return merged.slice(0, 6);
+}
+
 export function getOverview(): AdminOverview {
-  return store.overview;
+  return {
+    ...store.overview,
+    notifications: buildNotifications(store.overview),
+  };
+}
+
+// --- announcements (CRUD) -------------------------------------------------
+// Dibaca landing page (status=aktif) DAN panel admin (semua). Karena state-nya
+// ada di server, apa yang dibuat admin langsung tampil di guest/landing tanpa
+// bergantung pada memori browser yang reset tiap reload.
+
+function isExpired(tanggalBerakhir: string, now: Date = new Date()): boolean {
+  const deadline = new Date(`${tanggalBerakhir}T00:00:00`);
+  if (Number.isNaN(deadline.getTime())) return false;
+  const startOfDeadline = new Date(
+    deadline.getFullYear(),
+    deadline.getMonth(),
+    deadline.getDate(),
+  );
+  const startOfToday = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+  );
+  return startOfDeadline.getTime() < startOfToday.getTime();
+}
+
+export function listAllAnnouncements(): Announcement[] {
+  return store.announcements;
+}
+
+export function listActiveAnnouncements(): Announcement[] {
+  return store.announcements.filter(
+    (a) => a.status === "aktif" && !isExpired(a.tanggalBerakhir),
+  );
+}
+
+export function createAnnouncement(input: AnnouncementInput): Announcement {
+  const created: Announcement = { id: `ann-${Date.now()}`, ...input };
+  store.announcements.unshift(created);
+  return created;
+}
+
+export function updateAnnouncement(
+  id: string,
+  patch: Partial<AnnouncementInput>,
+): Announcement | null {
+  const idx = store.announcements.findIndex((a) => a.id === id);
+  if (idx === -1) return null;
+  store.announcements[idx] = { ...store.announcements[idx], ...patch };
+  return store.announcements[idx];
+}
+
+export function deleteAnnouncement(id: string): boolean {
+  const idx = store.announcements.findIndex((a) => a.id === id);
+  if (idx === -1) return false;
+  store.announcements.splice(idx, 1);
+  return true;
 }
 
 // --- password reset --------------------------------------------------------

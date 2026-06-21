@@ -6,11 +6,12 @@ import {
   type InquiryStatus,
 } from "@/store/api/inquiryApi";
 
-// Urutan tahap sesuai PRD: Baru → Diproses → Selesai.
+// Urutan tahap (nilai data tetap Indonesia, label tampilan Inggris).
+// "selesai" sengaja ditandai biar badge-nya bisa diwarnain hijau pas tercapai.
 const STATUS_FLOW: { key: InquiryStatus; label: string }[] = [
-  { key: "baru", label: "BARU" },
-  { key: "diproses", label: "DIPROSES" },
-  { key: "selesai", label: "SELESAI" },
+  { key: "baru", label: "SUBMITTED" },
+  { key: "diproses", label: "IN PROGRESS" },
+  { key: "selesai", label: "COMPLETED" },
 ];
 
 const dateFormatter = new Intl.DateTimeFormat("en-GB", {
@@ -20,7 +21,7 @@ const dateFormatter = new Intl.DateTimeFormat("en-GB", {
 });
 
 function formatDate(iso?: string) {
-  if (!iso) return "—";
+  if (!iso) return "-";
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return iso;
   return dateFormatter.format(date).toUpperCase();
@@ -32,7 +33,7 @@ export function InquiryList() {
   if (isError) {
     return (
       <p className="text-label-uppercase text-error uppercase">
-        Gagal memuat riwayat inquiry.
+        Failed to load your inquiries.
       </p>
     );
   }
@@ -40,7 +41,7 @@ export function InquiryList() {
   if (isLoading || !data) {
     return (
       <p className="text-label-uppercase text-on-surface-variant uppercase">
-        Memuat inquiry…
+        Loading inquiries…
       </p>
     );
   }
@@ -48,7 +49,7 @@ export function InquiryList() {
   if (data.length === 0) {
     return (
       <p className="text-label-uppercase text-on-surface-variant uppercase">
-        Belum ada inquiry. Kirim project brief pertama Anda di atas.
+        No inquiries yet. Send your first project brief above.
       </p>
     );
   }
@@ -71,28 +72,28 @@ function InquiryCard({ inquiry }: { inquiry: ClientInquiry }) {
         <div>
           <p className="text-label-uppercase text-secondary uppercase mb-2">
             {inquiry.jenisJob}
-            {inquiry.brand ? ` — ${inquiry.brand}` : ""}
+            {inquiry.brand ? ` · ${inquiry.brand}` : ""}
           </p>
           <h3 className="font-display text-headline-md text-primary uppercase">
             {inquiry.judulProject}
           </h3>
         </div>
         <p className="text-caption text-secondary uppercase tracking-[0.1em]">
-          Diajukan {formatDate(inquiry.createdAt)}
+          Submitted {formatDate(inquiry.createdAt)}
         </p>
       </div>
 
-      {/* Pipeline status: Baru → Diproses → Selesai */}
+      {/* Pipeline status: Submitted → In Progress → Completed */}
       <StatusPipeline activeIndex={activeIndex} />
 
       <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-gutter gap-y-3">
-        <Field label="TANGGAL PROJECT" value={formatDate(inquiry.tanggalProject)} />
-        <Field label="KONTAK" value={inquiry.noTelepon} />
+        <Field label="PROJECT DATE" value={formatDate(inquiry.tanggalProject)} />
+        <Field label="CONTACT" value={inquiry.noTelepon} />
         {inquiry.modelPilihan && (
-          <Field label="MODEL PILIHAN" value={inquiry.modelPilihan} wide />
+          <Field label="PREFERRED TALENT" value={inquiry.modelPilihan} wide />
         )}
         {inquiry.catatanClient && (
-          <Field label="CATATAN ANDA" value={inquiry.catatanClient} wide />
+          <Field label="YOUR NOTES" value={inquiry.catatanClient} wide />
         )}
       </dl>
 
@@ -100,7 +101,7 @@ function InquiryCard({ inquiry }: { inquiry: ClientInquiry }) {
       {inquiry.catatanAdmin && (
         <div className="border-l-2 border-primary bg-surface-container-lowest px-5 py-4">
           <p className="text-label-uppercase text-secondary uppercase mb-2">
-            CATATAN DARI AGENCY
+            NOTE FROM THE AGENCY
           </p>
           <p className="text-body-md text-primary">{inquiry.catatanAdmin}</p>
         </div>
@@ -111,29 +112,33 @@ function InquiryCard({ inquiry }: { inquiry: ClientInquiry }) {
 
 function StatusPipeline({ activeIndex }: { activeIndex: number }) {
   return (
-    <ol className="flex items-center gap-2" aria-label="Status inquiry">
+    <ol className="flex items-center gap-2" aria-label="Inquiry status">
       {STATUS_FLOW.map((step, i) => {
         const reached = i <= activeIndex;
         const isCurrent = i === activeIndex;
+        // Tahap "Completed" pas udah tercapai diwarnain hijau (accent), bukan
+        // hitam — biar keliatan jelas kalau project-nya udah kelar.
+        const isDone = step.key === "selesai" && reached;
+
+        const chipClass = isDone
+          ? "border-accent text-accent"
+          : reached
+            ? "border-primary text-primary"
+            : "border-outline-variant text-on-surface-variant";
+        const dotClass = isDone
+          ? "bg-accent"
+          : isCurrent
+            ? "bg-primary"
+            : reached
+              ? "bg-primary/50"
+              : "bg-outline-variant";
+
         return (
           <li key={step.key} className="flex items-center gap-2 flex-1">
             <span
-              className={`flex items-center gap-2 border px-3 py-1 text-label-uppercase uppercase ${
-                reached
-                  ? "border-primary text-primary"
-                  : "border-outline-variant text-on-surface-variant"
-              }`}
+              className={`flex items-center gap-2 border px-3 py-1 text-label-uppercase uppercase ${chipClass}`}
             >
-              <span
-                className={`w-1.5 h-1.5 ${
-                  isCurrent
-                    ? "bg-primary"
-                    : reached
-                      ? "bg-primary/50"
-                      : "bg-outline-variant"
-                }`}
-                aria-hidden="true"
-              />
+              <span className={`w-1.5 h-1.5 ${dotClass}`} aria-hidden="true" />
               {step.label}
             </span>
             {i < STATUS_FLOW.length - 1 && (

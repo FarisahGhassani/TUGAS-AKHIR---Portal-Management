@@ -28,7 +28,7 @@ export function ResetPasswordForm({ token }: { token: string | null }) {
         </p>
         <Link
           href="/auth"
-          className="inline-block w-full text-center bg-primary text-on-primary text-label-uppercase py-4 px-8 hover:opacity-70 transition-opacity uppercase"
+          className="inline-block w-full text-center bg-primary text-on-primary text-label-uppercase py-4 px-8 hover:bg-accent transition-colors uppercase"
         >
           KE HALAMAN LOGIN
         </Link>
@@ -76,7 +76,7 @@ export function ResetPasswordForm({ token }: { token: string | null }) {
         <button
           type="button"
           onClick={() => router.push("/auth")}
-          className="w-full bg-primary text-on-primary text-label-uppercase py-4 px-8 hover:opacity-70 transition-opacity uppercase"
+          className="w-full bg-primary text-on-primary text-label-uppercase py-4 px-8 hover:bg-accent transition-colors uppercase"
         >
           LOGIN SEKARANG
         </button>
@@ -141,7 +141,7 @@ export function ResetPasswordForm({ token }: { token: string | null }) {
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full bg-primary text-on-primary text-label-uppercase py-4 px-8 hover:opacity-70 transition-opacity uppercase disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full bg-primary text-on-primary text-label-uppercase py-4 px-8 hover:bg-accent transition-colors uppercase disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isLoading ? "MENYIMPAN…" : "SIMPAN PASSWORD BARU"}
         </button>
