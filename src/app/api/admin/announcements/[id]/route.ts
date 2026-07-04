@@ -1,4 +1,4 @@
-import { updateAnnouncement, deleteAnnouncement } from "@/server/store";
+import { updateAnnouncement, deleteAnnouncement } from "@/server/db/announcements";
 import type { AnnouncementInput } from "@/store/api/announcementsApi";
 
 export const dynamic = "force-dynamic";
@@ -10,7 +10,7 @@ export async function PUT(
 ) {
   const { id } = await params;
   const body = (await request.json()) as Partial<AnnouncementInput>;
-  const updated = updateAnnouncement(id, body);
+  const updated = await updateAnnouncement(id, body);
   if (!updated) {
     return Response.json({ message: "Announcement not found." }, { status: 404 });
   }
@@ -23,7 +23,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
-  const ok = deleteAnnouncement(id);
+  const ok = await deleteAnnouncement(id);
   if (!ok) {
     return Response.json({ message: "Announcement not found." }, { status: 404 });
   }

@@ -1,8 +1,8 @@
-import { getOverview } from "@/server/store";
+import { getOverviewMetrics } from "@/server/db/overview";
 
-// Reflects new registrations as they happen, so it must never be cached.
+// Metrik dashboard admin dihitung dari MySQL (Prisma) — jangan cache.
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  return Response.json(getOverview());
+  return Response.json(await getOverviewMetrics());
 }

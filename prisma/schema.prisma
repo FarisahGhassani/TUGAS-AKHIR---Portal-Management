@@ -1,0 +1,247 @@
+// Prisma schema — Portal Manajemen Agency Modelling & Talent
+// Database: MySQL/MariaDB (XAMPP) → portal_management
+//
+// Penamaan primary key mengikuti ERD revisi: id_user, id_pendaftaran, dst.
+// Relasi N:N pendaftaran↔batch DILEBUR ke pendaftaran (id_batch), sedangkan
+// talent↔batch tetap memakai tabel perantara talent_batch.
+//
+// Setelah mengubah file ini, jalankan:
+//   npx prisma migrate dev --name <nama_perubahan>
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  client
+  talent
+  admin
+}
+
+enum Gender {
+  female
+  male
+  non_binary
+}
+
+enum StatusPendaftaran {
+  submitted
+  in_progress
+  accepted
+  rejected
+}
+
+enum JenisPendaftaran {
+  talent
+  kelas
+}
+
+enum StatusInquiry {
+  submitted
+  in_progress
+  completed
+}
+
+enum StatusBatch {
+  buka
+  tutup
+}
+
+enum StatusKelulusan {
+  belum
+  lulus
+  tidak_lulus
+}
+
+enum StatusAnnouncement {
+  aktif
+  nonaktif
+}
+
+enum TipeProject {
+  event
+  photoshoot
+  other
+}
+
+model User {
+  idUser    Int      @id @default(autoincrement()) @map("id_user")
+  nama      String
+  email     String   @unique
+  password  String
+  role      Role
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  pendaftaran Pendaftaran[]
+  inquiries   InquiryClient[]
+
+  @@map("user")
+}
+
+model Pendaftaran {
+  idPendaftaran  Int               @id @default(autoincrement()) @map("id_pendaftaran")
+  idUser         Int               @map("id_user")
+  idBatch        Int?              @map("id_batch")
+  namaTalent     String            @map("nama_talent")
+  gender         Gender            @default(female)
+  tanggalLahir   DateTime          @map("tanggal_lahir") @db.Date
+  tinggiBadan    Int               @map("tinggi_badan")
+  beratBadan     Int               @map("berat_badan")
+  sizeBaju       String            @map("size_baju")
+  sizeSepatu     String            @map("size_sepatu")
+  noIdentitas    String            @map("no_identitas")
+  noTelepon      String            @map("no_telepon")
+  // Akun Instagram talent (handle tanpa "@" atau URL). Opsional — ditampilkan di
+  // halaman detail talent supaya client bisa langsung menuju IG si talent.
+  instagram      String?           @map("instagram")
+  fotoProfil     String            @map("foto_profil") @db.LongText
+  fotoPortofolio String?           @map("foto_portofolio") @db.LongText
+  jenis          JenisPendaftaran
+  status         StatusPendaftaran @default(submitted)
+  createdAt      DateTime          @default(now()) @map("created_at")
+  updatedAt      DateTime          @updatedAt @map("updated_at")
+
+  user        User            @relation(fields: [idUser], references: [idUser])
+  batch       BatchModelling? @relation(fields: [idBatch], references: [idBatch])
+  talent      Talent?
+  // Enrollment kelas (untuk pendaftaran jenis=kelas yang diterima): kelulusan +
+  // sertifikat ada di talent_batch.
+  talentBatch TalentBatch?
+
+  @@map("pendaftaran")
+}
+
+model Talent {
+  idTalent       Int       @id @default(autoincrement()) @map("id_talent")
+  idPendaftaran  Int       @unique @map("id_pendaftaran")
+  // kategori menyimpan array pilihan kategori kerja sebagai JSON string, mis.
+  // ["runway","photoshoot"] — satu kolom, dipilih lewat ceklis di form admin.
+  kategori       String    @db.Text
+  fotoComcard    String?   @map("foto_comcard") @db.LongText
+  fotoPortofolio String?   @map("foto_portofolio") @db.LongText
+  tglKontrak     DateTime? @map("tgl_kontrak") @db.Date
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  pendaftaran Pendaftaran @relation(fields: [idPendaftaran], references: [idPendaftaran])
+
+  @@map("talent")
+}
+
+model BatchModelling {
+  idBatch           Int         @id @default(autoincrement()) @map("id_batch")
+  // Tidak ada kolom "batch ke" — nomor batch ("Batch 01") diturunkan dari URUTAN
+  // baris saat dibaca, jadi tetap rapat tanpa lompat meski ada batch dihapus.
+  namaBatch         String      @map("nama_batch")
+  kuota             Int
+  tglMulai          DateTime    @map("tgl_mulai") @db.Date
+  tglBerakhir       DateTime    @map("tgl_berakhir") @db.Date
+  statusPendaftaran StatusBatch @default(buka) @map("status_pendaftaran")
+  createdAt         DateTime    @default(now()) @map("created_at")
+  updatedAt         DateTime    @updatedAt @map("updated_at")
+
+  pendaftaran Pendaftaran[]
+  talentBatch TalentBatch[]
+
+  @@map("batch_modelling")
+}
+
+// Enrollment kelas: satu baris per pendaftaran KELAS yang diterima (murid di
+// dalam batch). Menyimpan kelulusan (ditentukan admin) + sertifikat saat lulus.
+model TalentBatch {
+  idTalentBatch Int             @id @default(autoincrement()) @map("id_talent_batch")
+  idPendaftaran Int             @unique @map("id_pendaftaran")
+  idBatch       Int             @map("id_batch")
+  sertifikatUrl String?         @map("sertifikat_url") @db.LongText
+  statusLulus   StatusKelulusan @default(belum) @map("status_lulus")
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @updatedAt @map("updated_at")
+
+  pendaftaran Pendaftaran    @relation(fields: [idPendaftaran], references: [idPendaftaran], onDelete: Cascade)
+  batch       BatchModelling @relation(fields: [idBatch], references: [idBatch])
+
+  @@map("talent_batch")
+}
+
+model InquiryClient {
+  idInquiry      Int           @id @default(autoincrement()) @map("id_inquiry")
+  // Nullable: form kolaborasi publik bisa dikirim tanpa sesi login. Jika klien
+  // login, isi dengan id_user-nya; jika tamu, biarkan null.
+  idUser         Int?          @map("id_user")
+  namaClient     String        @map("nama_client")
+  noTelepon      String        @map("no_telepon")
+  judulProject   String        @map("judul_project")
+  brand          String?
+  jenisJob       String        @map("jenis_job")
+  // Timeline proyek yang diminta klien: rentang mulai–selesai (durasi).
+  tanggalProject DateTime?     @map("tanggal_project") @db.Date
+  tanggalSelesai DateTime?     @map("tanggal_selesai") @db.Date
+  modelPilihan   String?       @map("model_pilihan") @db.Text
+  catatanClient  String?       @map("catatan_client") @db.Text
+  status         StatusInquiry @default(submitted)
+  catatanAdmin   String?       @map("catatan_admin") @db.Text
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+
+  user User? @relation(fields: [idUser], references: [idUser])
+
+  @@map("inquiry_client")
+}
+
+model Announcement {
+  idAnnouncement  Int                  @id @default(autoincrement()) @map("id_announcement")
+  judul           String
+  // Ringkasan tampil di landing. (kategori & alt poster dihapus per revisi.)
+  ringkasan       String             @db.Text
+  fotoPoster      String?            @map("foto_poster")
+  link            String?
+  tanggalBerakhir DateTime?          @map("tanggal_berakhir") @db.Date
+  status          StatusAnnouncement @default(aktif)
+  createdAt       DateTime           @default(now()) @map("created_at")
+  updatedAt       DateTime           @updatedAt @map("updated_at")
+
+  @@map("announcement")
+}
+
+// Pengaturan situs yang bisa diganti admin (key-value tunggal). value = URL /
+// data URL (aset: hero_video, essence_image, auth_image) ATAU JSON string
+// (konten: key "landing"). Menggabungkan site_asset + site_content.
+model SiteSetting {
+  key       String   @id
+  value     String   @db.LongText
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("site_setting")
+}
+
+model Projects {
+  idProjects  Int         @id @default(autoincrement()) @map("id_projects")
+  slug        String      @unique
+  judul       String
+  event       String
+  tipe        TipeProject @default(photoshoot)
+  // Timeline project: rentang tanggal mulai–selesai (bukan satu hari). Selesai
+  // boleh kosong untuk project yang masih berjalan.
+  tglMulai    DateTime?   @map("tgl_mulai") @db.Date
+  tglSelesai  DateTime?   @map("tgl_selesai") @db.Date
+  cover       String?     @db.LongText
+  coverAlt    String?     @map("cover_alt")
+  coverWidth  Int?        @map("cover_width")
+  coverHeight Int?        @map("cover_height")
+  // Banyak collaborator (nama+peran) disimpan sebagai SATU kolom JSON, mis.
+  // [{ "name": "Anya", "role": "Model" }, { "name": "Lena", "role": "Photographer" }]
+  // — bukan banyak kolom & tanpa tabel terpisah. Bentuknya persis array yang
+  // dikirim ProjectForm via RTK (ProjectCollaborator[]), jadi penyimpanan ↔
+  // kode tinggal 1:1.
+  collaborators Json?
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  @@map("projects")
+}

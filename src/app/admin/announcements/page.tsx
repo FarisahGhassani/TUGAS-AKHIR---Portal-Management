@@ -12,17 +12,10 @@ import {
   useDeleteAnnouncementMutation,
   isAnnouncementExpired,
   type Announcement,
-  type AnnouncementKategori,
   type AnnouncementStatus,
 } from "@/store/api/announcementsApi";
 
 const PAGE_SIZE = 10;
-
-const kategoriLabel: Record<AnnouncementKategori, string> = {
-  casting: "CASTING CALL",
-  kelas: "MODELLING CLASS",
-  umum: "BULLETIN",
-};
 
 const dateFormatter = new Intl.DateTimeFormat("en-GB", {
   day: "2-digit",
@@ -91,7 +84,11 @@ export default function AdminAnnouncementsPage() {
             </p>
           </header>
 
-          <AnnouncementForm editing={editing} onDone={() => setEditing(null)} />
+          <AnnouncementForm
+            key={editing?.id ?? "new"}
+            editing={editing}
+            onDone={() => setEditing(null)}
+          />
 
           <section className="flex flex-col gap-4">
             <div className="flex justify-between items-end border-b border-outline-variant pb-4">
@@ -125,9 +122,6 @@ export default function AdminAnnouncementsPage() {
                           Pengumuman
                         </th>
                         <th className="py-4 text-label-uppercase text-secondary font-normal uppercase">
-                          Kategori
-                        </th>
-                        <th className="py-4 text-label-uppercase text-secondary font-normal uppercase">
                           Tenggat
                         </th>
                         <th className="py-4 text-label-uppercase text-secondary font-normal uppercase">
@@ -152,16 +146,13 @@ export default function AdminAnnouncementsPage() {
                               {/* eslint-disable-next-line @next/next/no-img-element */}
                               <img
                                 src={a.fotoPoster}
-                                alt={a.fotoPosterAlt}
+                                alt={a.judul}
                                 className="h-12 w-12 object-cover border border-outline-variant shrink-0"
                               />
                               <span className="text-primary font-medium">
                                 {a.judul}
                               </span>
                             </div>
-                          </td>
-                          <td className="py-4 text-secondary">
-                            {kategoriLabel[a.kategori]}
                           </td>
                           <td className="py-4 text-secondary">
                             {formatDate(a.tanggalBerakhir)}

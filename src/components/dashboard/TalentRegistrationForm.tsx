@@ -2,23 +2,33 @@
 
 import { useState } from "react";
 import { useCreateApplicationMutation } from "@/store/api/dashboardApi";
+import type { TalentGender } from "@/store/api/talentApi";
 import { useAppSelector } from "@/store/hooks";
 import { FileField, type PickedFile } from "./FileField";
+import { UnitInput, CLOTHING_SIZES } from "./UnitInput";
+import { SubmissionThankYou } from "./SubmissionThankYou";
 
 const inputClass =
   "w-full border-0 border-b border-outline bg-transparent px-0 py-2 focus:outline-none focus:border-primary text-body-md text-primary placeholder:text-outline-variant transition-colors";
 const labelClass = "text-label-uppercase text-primary block uppercase";
+const selectClass = `${inputClass} appearance-none rounded-none cursor-pointer pr-8`;
+
+const genderOptions: { value: TalentGender; label: string }[] = [
+  { value: "female", label: "FEMALE" },
+  { value: "male", label: "MALE" },
+];
 
 /**
- * Form pendaftaran TALENT — field mengikuti tabel PENDAFTARAN (jenis = talent)
- * di PRD. Upload foto diproses & divalidasi oleh FileField; sisanya divalidasi
- * di sini sebelum dikirim lewat RTK mutation ke store pendaftaran yang sama.
+ * Form pendaftaran TALENT — menulis ke tabel PENDAFTARAN (jenis = talent) milik
+ * user yang login (status awal pending). Foto profil WAJIB; portfolio opsional
+ * (boleh kosong / null di DB). Setelah submit, form diganti panel terima kasih.
  */
-export function TalentRegistrationForm() {
+export function TalentRegistrationForm({ onClose }: { onClose: () => void }) {
   const [createApplication, { isLoading }] = useCreateApplicationMutation();
-  const userName = useAppSelector((s) => s.auth.user?.name);
+  const userId = useAppSelector((s) => s.auth.user?.id);
 
-  const [namaTalent, setNamaTalent] = useState(userName ?? "");
+  const [namaTalent, setNamaTalent] = useState("");
+  const [gender, setGender] = useState<TalentGender>("female");
   const [tanggalLahir, setTanggalLahir] = useState("");
   const [tinggiBadan, setTinggiBadan] = useState("");
   const [beratBadan, setBeratBadan] = useState("");
@@ -26,11 +36,12 @@ export function TalentRegistrationForm() {
   const [sizeSepatu, setSizeSepatu] = useState("");
   const [kartuIdentitas, setKartuIdentitas] = useState("");
   const [noTelepon, setNoTelepon] = useState("");
+  const [instagram, setInstagram] = useState("");
   const [fotoProfil, setFotoProfil] = useState<PickedFile | null>(null);
   const [fotoPortofolio, setFotoPortofolio] = useState<PickedFile | null>(null);
 
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
   function validate(): string | null {
     if (!namaTalent.trim()) return "Full name is required.";
@@ -42,24 +53,30 @@ export function TalentRegistrationForm() {
     if (!sizeSepatu.trim()) return "Shoe size is required.";
     if (!kartuIdentitas.trim()) return "ID card number is required.";
     if (!noTelepon.trim()) return "Phone number is required.";
-    if (!fotoProfil) return "Please attach a profile photo.";
+    if (!instagram.trim()) return "Instagram account is required.";
+    if (!fotoProfil?.dataUrl) return "Profile photo is required.";
     return null;
   }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setSuccess(false);
     const validationError = validate();
     if (validationError) {
       setError(validationError);
+      return;
+    }
+    if (!userId) {
+      setError("Your session expired. Please log in again.");
       return;
     }
     setError(null);
 
     try {
       await createApplication({
+        userId,
         jenis: "talent",
         namaTalent: namaTalent.trim(),
+        gender,
         tanggalLahir,
         tinggiBadan: Number(tinggiBadan),
         beratBadan: Number(beratBadan),
@@ -67,18 +84,11 @@ export function TalentRegistrationForm() {
         sizeSepatu: sizeSepatu.trim(),
         kartuIdentitas: kartuIdentitas.trim(),
         noTelepon: noTelepon.trim(),
-        fotoProfil: fotoProfil?.name,
-        fotoPortofolio: fotoPortofolio?.name,
+        instagram: instagram.trim().replace(/^@+/, ""),
+        fotoProfil: fotoProfil!.dataUrl,
+        fotoPortofolio: fotoPortofolio?.dataUrl,
       }).unwrap();
-      setTanggalLahir("");
-      setTinggiBadan("");
-      setBeratBadan("");
-      setSizeBaju("");
-      setSizeSepatu("");
-      setKartuIdentitas("");
-      setFotoProfil(null);
-      setFotoPortofolio(null);
-      setSuccess(true);
+      setSubmitted(true);
     } catch (err) {
       setError(
         err && typeof err === "object" && "data" in err
@@ -89,19 +99,42 @@ export function TalentRegistrationForm() {
     }
   }
 
+  if (submitted) {
+    return <SubmissionThankYou onAction={onClose} />;
+  }
+
   return (
     <form className="space-y-6" onSubmit={handleSubmit} noValidate>
-      <div className="space-y-1">
-        <label htmlFor="t-nama" className={labelClass}>
-          FULL NAME
-        </label>
-        <input
-          id="t-nama"
-          type="text"
-          value={namaTalent}
-          onChange={(e) => setNamaTalent(e.target.value)}
-          className={inputClass}
-        />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="space-y-1 md:col-span-2">
+          <label htmlFor="t-nama" className={labelClass}>
+            FULL NAME
+          </label>
+          <input
+            id="t-nama"
+            type="text"
+            value={namaTalent}
+            onChange={(e) => setNamaTalent(e.target.value)}
+            className={inputClass}
+          />
+        </div>
+        <div className="space-y-1 relative">
+          <label htmlFor="t-gender" className={labelClass}>
+            GENDER
+          </label>
+          <select
+            id="t-gender"
+            value={gender}
+            onChange={(e) => setGender(e.target.value as TalentGender)}
+            className={selectClass}
+          >
+            {genderOptions.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -135,75 +168,95 @@ export function TalentRegistrationForm() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
         <div className="space-y-1">
           <label htmlFor="t-height" className={labelClass}>
-            HEIGHT (CM)
+            HEIGHT
           </label>
-          <input
+          <UnitInput
             id="t-height"
-            type="number"
-            min={1}
             value={tinggiBadan}
-            onChange={(e) => setTinggiBadan(e.target.value)}
-            className={inputClass}
+            onChange={setTinggiBadan}
+            unit="Cm"
           />
         </div>
         <div className="space-y-1">
           <label htmlFor="t-weight" className={labelClass}>
-            WEIGHT (KG)
+            WEIGHT
           </label>
-          <input
+          <UnitInput
             id="t-weight"
-            type="number"
-            min={1}
             value={beratBadan}
-            onChange={(e) => setBeratBadan(e.target.value)}
-            className={inputClass}
+            onChange={setBeratBadan}
+            unit="Kg"
           />
         </div>
-        <div className="space-y-1">
+        <div className="space-y-1 relative">
           <label htmlFor="t-baju" className={labelClass}>
             CLOTHING
           </label>
-          <input
+          <select
             id="t-baju"
-            type="text"
             value={sizeBaju}
             onChange={(e) => setSizeBaju(e.target.value)}
-            placeholder="e.g. M"
-            className={inputClass}
-          />
+            className={selectClass}
+          >
+            <option value="">SELECT</option>
+            {CLOTHING_SIZES.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
         </div>
         <div className="space-y-1">
           <label htmlFor="t-sepatu" className={labelClass}>
             SHOE
           </label>
-          <input
+          {/* Cukup ukuran EU; UK dihitung otomatis di API saat ditampilkan. */}
+          <UnitInput
             id="t-sepatu"
-            type="text"
             value={sizeSepatu}
-            onChange={(e) => setSizeSepatu(e.target.value)}
+            onChange={setSizeSepatu}
+            unit="EU"
             placeholder="e.g. 40"
-            className={inputClass}
           />
         </div>
       </div>
 
-      <div className="space-y-1">
-        <label htmlFor="t-ktp" className={labelClass}>
-          ID CARD (KTP) NUMBER
-        </label>
-        <input
-          id="t-ktp"
-          type="text"
-          value={kartuIdentitas}
-          onChange={(e) => setKartuIdentitas(e.target.value)}
-          placeholder="National ID number"
-          className={inputClass}
-        />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-1">
+          <label htmlFor="t-ktp" className={labelClass}>
+            ID CARD (KTP) NUMBER
+          </label>
+          <input
+            id="t-ktp"
+            type="text"
+            value={kartuIdentitas}
+            onChange={(e) => setKartuIdentitas(e.target.value)}
+            placeholder="National ID number"
+            className={inputClass}
+          />
+        </div>
+        <div className="space-y-1">
+          <label htmlFor="t-ig" className={labelClass}>
+            INSTAGRAM
+          </label>
+          <input
+            id="t-ig"
+            type="text"
+            value={instagram}
+            onChange={(e) => setInstagram(e.target.value)}
+            placeholder="@portfolio or personal"
+            className={inputClass}
+          />
+          <p className="text-caption text-outline">
+            Portfolio or personal account — clients use this to reach you.
+          </p>
+        </div>
       </div>
 
       <FileField
         label="PROFILE PHOTO"
         accept="image/*"
+        hint="Full body / composite card if available"
         value={fotoProfil}
         onChange={setFotoProfil}
       />
@@ -219,11 +272,6 @@ export function TalentRegistrationForm() {
       {error && (
         <p className="text-caption text-error uppercase tracking-[0.1em]">
           {error}
-        </p>
-      )}
-      {success && (
-        <p className="text-caption text-primary uppercase tracking-[0.1em]">
-          Talent application submitted. Track its status in your history below.
         </p>
       )}
 

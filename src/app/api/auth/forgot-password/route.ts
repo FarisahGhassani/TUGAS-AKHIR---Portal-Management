@@ -1,4 +1,4 @@
-import { createResetToken } from "@/server/store";
+import { createResetToken } from "@/server/users";
 import { sendResetEmail } from "@/server/email";
 import type { ForgotPasswordRequest } from "@/store/api/authApi";
 
@@ -15,7 +15,7 @@ export async function POST(request: Request) {
     return Response.json({ message: "Email is required." }, { status: 400 });
   }
 
-  const token = createResetToken(body.email);
+  const token = await createResetToken(body.email);
 
   // The dev fallback (returning the link in the response) is allowed ONLY
   // outside production, so a real deployment never leaks the token to the

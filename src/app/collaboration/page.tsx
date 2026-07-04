@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef, useState } from "react";
 import { NavBar } from "@/components/NavBar";
 import { Footer } from "@/components/Footer";
 import { InquiryForm } from "@/components/collaboration/InquiryForm";
@@ -9,6 +10,18 @@ import { useAppSelector } from "@/store/hooks";
 
 export default function CollaborationPage() {
   const user = useAppSelector((s) => s.auth.user);
+
+  // Form ditampilkan "setengah" dulu (di-clamp) supaya halaman muat satu layar;
+  // klik → buka penuh lalu scroll otomatis ke form saat mau diisi.
+  const [briefOpen, setBriefOpen] = useState(false);
+  const formRef = useRef<HTMLDivElement>(null);
+
+  function openBrief() {
+    setBriefOpen(true);
+    requestAnimationFrame(() =>
+      formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
+    );
+  }
 
   return (
     <>
@@ -24,23 +37,55 @@ export default function CollaborationPage() {
               LET&apos;S COLLABORATE
             </h1>
             <p className="text-body-lg text-secondary max-w-prose mt-6">
-              Submit your project brief to Portal Management and track its
-              status from <span className="text-primary">Submitted</span> →{" "}
-              <span className="text-primary">In Progress</span> →{" "}
-              <span className="text-accent">Completed</span>.
+              Submit your project brief to Portal Management and follow its
+              progress here.
             </p>
           </section>
 
           <section className="px-margin-mobile md:px-margin-desktop pt-10 pb-12 max-w-editorial mx-auto">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-gutter">
-              {/* Pengajuan project brief */}
-              <div>
+              {/* Pengajuan project brief — collapsible */}
+              <div ref={formRef} className="scroll-mt-24">
                 <div className="flex justify-between items-end mb-6 border-b border-outline-variant pb-4">
                   <h2 className="font-display text-headline-md text-primary uppercase">
                     NEW PROJECT BRIEF
                   </h2>
                 </div>
-                <InquiryForm clientName={user?.name} />
+                <div className="relative">
+                  <div
+                    className={
+                      briefOpen
+                        ? ""
+                        : "max-h-[300px] overflow-hidden pointer-events-none select-none"
+                    }
+                  >
+                    <InquiryForm clientName={user?.name} />
+                  </div>
+                  {!briefOpen && (
+                    <button
+                      type="button"
+                      onClick={openBrief}
+                      aria-label="Open the project brief form"
+                      className="absolute inset-0 flex items-end justify-center bg-gradient-to-t from-background via-background/85 to-transparent"
+                    >
+                      <span className="mb-3 inline-flex items-center gap-2 border border-primary bg-background px-6 py-3 text-label-uppercase uppercase text-primary hover:bg-primary hover:text-on-primary transition-colors">
+                        Start your brief
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                          aria-hidden="true"
+                        >
+                          <path strokeLinecap="square" d="M6 9l6 6 6-6" />
+                        </svg>
+                      </span>
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Pemantauan status inquiry */}

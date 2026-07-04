@@ -1,6 +1,37 @@
-import type { Talent } from "@/store/api/talentApi";
+// Modul ini sekarang HANYA dipakai sebagai sumber nama talent untuk fitur
+// classes (MSW) lewat `findTalentById`, plus helper `slugify`/`cmToHeightLabel`
+// yang dipakai modul DB. Talent katalog sebenarnya kini ada di MySQL (Prisma).
+// Tipe di-lokalkan agar tidak ikut berubah saat shape RTK Talent berubah.
+type MockTalent = {
+  id: string;
+  slug: string;
+  name: string;
+  bio: string;
+  division: string;
+  gender: string;
+  categories: string[];
+  heightCm: number;
+  heightLabel: string;
+  cover: string;
+  coverAlt: string;
+  thumbAspect: string;
+  measurements: {
+    tinggiBadan: number;
+    beratBadan: number;
+    sizeBaju: string;
+    sizeSepatu: string;
+  };
+  portfolio: {
+    id: string;
+    caption: string;
+    category: string;
+    span?: string;
+    image: string;
+    alt: string;
+  }[];
+};
 
-export const talents: Talent[] = [
+export const talents: MockTalent[] = [
   {
     id: "t-anya",
     slug: "anya-taylor",
@@ -347,48 +378,53 @@ export const talents: Talent[] = [
   },
 ];
 
-export function listTalents(params?: {
-  search?: string;
-  division?: string;
-  gender?: string;
-  category?: string;
-  minHeightCm?: number;
-}) {
-  return talents.filter((t) => {
-    if (
-      params?.search &&
-      !t.name.toLowerCase().includes(params.search.toLowerCase())
-    ) {
-      return false;
-    }
-    if (
-      params?.division &&
-      params.division !== "all" &&
-      t.division !== params.division
-    ) {
-      return false;
-    }
-    if (
-      params?.gender &&
-      params.gender !== "all" &&
-      t.gender !== params.gender
-    ) {
-      return false;
-    }
-    if (
-      params?.category &&
-      params.category !== "all" &&
-      !t.categories.includes(params.category as Talent["categories"][number])
-    ) {
-      return false;
-    }
-    if (params?.minHeightCm && t.heightCm < params.minHeightCm) {
-      return false;
-    }
-    return true;
-  });
+// Dipakai fitur classes (MSW) untuk menampilkan nama talent dari id.
+export function findTalentById(id: string) {
+  return talents.find((t) => t.id === id);
 }
 
-export function findTalentBySlug(slug: string) {
-  return talents.find((t) => t.slug === slug);
+export function slugify(name: string): string {
+  return name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+// cm → label kaki/inci (mis. 178 → 5'10") supaya kartu & detail tetap konsisten
+// tanpa admin perlu mengisi manual.
+export function cmToHeightLabel(cm: number): string {
+  if (!cm || cm <= 0) return "";
+  const totalInches = Math.round(cm / 2.54);
+  const ft = Math.floor(totalInches / 12);
+  const inch = totalInches % 12;
+  return `${ft}'${inch}"`;
+}
+
+// --- Ukuran sepatu ---------------------------------------------------------
+// Form hanya meminta ukuran EROPA (angka). UK diturunkan OTOMATIS di sisi
+// API/server, jadi DB cukup menyimpan angka EU mentah (mis. "42").
+
+// Ambil angka EU dari string apa pun ("42", "42 EU", "42 EU / 8 UK") → "42".
+// String kosong bila tidak ada angka (mis. data lama "-").
+export function parseShoeEu(raw: string): string {
+  const eu = parseInt(raw, 10);
+  return Number.isFinite(eu) && eu > 0 ? String(eu) : "";
+}
+
+// EU → UK (perkiraan linear, dibulatkan ke 0.5 terdekat). Cukup untuk comp card;
+// konversi sepatu tidak pernah 100% linear antar-merek.
+export function euToUkShoe(eu: number): number {
+  const uk = 2.5 + (eu - 35) * (8.5 / 11);
+  return Math.round(uk * 2) / 2;
+}
+
+// "42" (atau "42 EU") → "42 EU / 8 UK". Bila tak ada angka, kembalikan apa
+// adanya supaya data lama/placeholder ("-") tetap tampil.
+export function formatShoeSize(raw: string): string {
+  const eu = parseInt(raw, 10);
+  if (!Number.isFinite(eu) || eu <= 0) return raw;
+  const uk = euToUkShoe(eu);
+  const ukLabel = Number.isInteger(uk) ? String(uk) : uk.toFixed(1);
+  return `${eu} EU / ${ukLabel} UK`;
 }

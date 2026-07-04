@@ -14,7 +14,6 @@ import {
   useGetDashboardSummaryQuery,
   type ApplicationStatus,
   type ApplicationType,
-  type PaymentStatus,
   type GraduationStatus,
   type TalentApplication,
   type TalentClass,
@@ -26,15 +25,10 @@ const applicationStatus: Record<
   ApplicationStatus,
   { label: string; tone: Tone }
 > = {
-  pending: { label: "PENDING", tone: "neutral" },
-  diterima: { label: "ACCEPTED", tone: "positive" },
-  ditolak: { label: "REJECTED", tone: "negative" },
-};
-
-const paymentStatus: Record<PaymentStatus, { label: string; tone: Tone }> = {
-  pending: { label: "PAYMENT PENDING", tone: "neutral" },
-  valid: { label: "PAID", tone: "positive" },
-  tidak_valid: { label: "PAYMENT INVALID", tone: "negative" },
+  submitted: { label: "SUBMITTED", tone: "neutral" },
+  in_progress: { label: "IN PROGRESS", tone: "neutral" },
+  accepted: { label: "ACCEPTED", tone: "positive" },
+  rejected: { label: "REJECTED", tone: "negative" },
 };
 
 const graduationStatus: Record<
@@ -70,12 +64,16 @@ export default function DashboardPage() {
   // Nama hero diambil dari akun yang SEDANG login (auth/RTK), bukan dari data
   // mock dashboard — dulu selalu "ELARA" walau ganti akun. Ini sumber bug itu.
   const userName = useAppSelector((s) => s.auth.user?.name);
+  // Dashboard dibaca PER-USER (riwayat & kelas miliknya sendiri); userId dari
+  // auth diteruskan ke query. Akun baru → kosong.
+  const userId = useAppSelector((s) => s.auth.user?.id);
   // Modal pendaftaran yang sedang terbuka (talent | kelas | null) dari ui slice.
   const regModal = useAppSelector((s) => s.ui.regModal);
   const dispatch = useAppDispatch();
-  const { data, isLoading, isError } = useGetDashboardSummaryQuery(undefined, {
-    skip: !isTalent,
-  });
+  const { data, isLoading, isError } = useGetDashboardSummaryQuery(
+    userId ?? "",
+    { skip: !isTalent || !userId },
+  );
 
   const close = () => dispatch(closeRegModal());
 
@@ -183,14 +181,14 @@ export default function DashboardPage() {
               onClose={close}
               title="APPLY AS TALENT"
             >
-              <TalentRegistrationForm />
+              <TalentRegistrationForm onClose={close} />
             </Modal>
             <Modal
               open={regModal === "kelas"}
               onClose={close}
               title="JOIN MODELLING CLASS"
             >
-              <ClassRegistrationForm />
+              <ClassRegistrationForm onClose={close} />
             </Modal>
           </>
         )}
@@ -237,7 +235,6 @@ function ClassCard({ cls }: { cls: TalentClass }) {
         </p>
       </div>
       <div className="flex flex-wrap gap-3">
-        <StatusBadge {...paymentStatus[cls.statusPembayaran]} />
         <StatusBadge {...graduationStatus[cls.statusKelulusan]} />
       </div>
       {cls.statusKelulusan === "lulus" && cls.sertifikatUrl && (

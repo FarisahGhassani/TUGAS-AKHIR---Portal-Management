@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useCreateInquiryMutation } from "@/store/api/inquiryApi";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setInquiryTalent } from "@/store/slices/uiSlice";
+import { SubmissionThankYou } from "@/components/dashboard/SubmissionThankYou";
 
 const JOB_TYPES = [
   "Editorial",
@@ -30,12 +31,14 @@ export function InquiryForm({ clientName }: { clientName?: string }) {
   // kunjungan berikutnya.
   const dispatch = useAppDispatch();
   const inquiryTalent = useAppSelector((s) => s.ui.inquiryTalent);
+  const userId = useAppSelector((s) => s.auth.user?.id);
 
   const [noTelepon, setNoTelepon] = useState("");
   const [judulProject, setJudulProject] = useState("");
   const [brand, setBrand] = useState("");
   const [jenisJob, setJenisJob] = useState("");
   const [tanggalProject, setTanggalProject] = useState("");
+  const [tanggalProjectSelesai, setTanggalProjectSelesai] = useState("");
   const [modelPilihan, setModelPilihan] = useState(inquiryTalent ?? "");
   const [catatanClient, setCatatanClient] = useState("");
 
@@ -44,20 +47,32 @@ export function InquiryForm({ clientName }: { clientName?: string }) {
   }, [inquiryTalent, dispatch]);
 
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
-    setSuccess(false);
 
     if (!jenisJob) {
       setError("Please select a job type first.");
       return;
     }
+    if (
+      tanggalProject &&
+      tanggalProjectSelesai &&
+      tanggalProjectSelesai < tanggalProject
+    ) {
+      setError("End date can't be before the start date.");
+      return;
+    }
+    if (!userId) {
+      setError("Your session expired. Please log in again.");
+      return;
+    }
 
     try {
       await createInquiry({
+        userId,
         // Nama dikirim diam-diam dari akun yang login, bukan dari input.
         namaClient: clientName ?? "",
         noTelepon,
@@ -65,6 +80,7 @@ export function InquiryForm({ clientName }: { clientName?: string }) {
         brand: brand || undefined,
         jenisJob,
         tanggalProject: tanggalProject || undefined,
+        tanggalProjectSelesai: tanggalProjectSelesai || undefined,
         modelPilihan: modelPilihan || undefined,
         catatanClient: catatanClient || undefined,
       }).unwrap();
@@ -74,9 +90,10 @@ export function InquiryForm({ clientName }: { clientName?: string }) {
       setBrand("");
       setJenisJob("");
       setTanggalProject("");
+      setTanggalProjectSelesai("");
       setModelPilihan("");
       setCatatanClient("");
-      setSuccess(true);
+      setSubmitted(true);
     } catch (err) {
       const message =
         err && typeof err === "object" && "data" in err
@@ -85,6 +102,16 @@ export function InquiryForm({ clientName }: { clientName?: string }) {
           : "Failed to send your inquiry. Please try again.";
       setError(message);
     }
+  }
+
+  if (submitted) {
+    return (
+      <SubmissionThankYou
+        message="We've received your project brief. Track its status under Your Inquiries on this page."
+        actionLabel="Send Another"
+        onAction={() => setSubmitted(false)}
+      />
+    );
   }
 
   return (
@@ -170,16 +197,42 @@ export function InquiryForm({ clientName }: { clientName?: string }) {
       </div>
 
       <div className="space-y-1">
-        <label htmlFor="inq-date" className={labelClass}>
-          PROJECT DATE / TIMELINE
-        </label>
-        <input
-          id="inq-date"
-          type="date"
-          value={tanggalProject}
-          onChange={(e) => setTanggalProject(e.target.value)}
-          className={inputClass}
-        />
+        <span className={labelClass}>
+          PROJECT TIMELINE <span className="text-secondary">(optional)</span>
+        </span>
+        <div className="grid grid-cols-2 gap-6">
+          <div className="space-y-1">
+            <label
+              htmlFor="inq-date"
+              className="text-caption text-secondary uppercase tracking-[0.1em]"
+            >
+              From
+            </label>
+            <input
+              id="inq-date"
+              type="date"
+              value={tanggalProject}
+              onChange={(e) => setTanggalProject(e.target.value)}
+              className={inputClass}
+            />
+          </div>
+          <div className="space-y-1">
+            <label
+              htmlFor="inq-date-end"
+              className="text-caption text-secondary uppercase tracking-[0.1em]"
+            >
+              To
+            </label>
+            <input
+              id="inq-date-end"
+              type="date"
+              value={tanggalProjectSelesai}
+              min={tanggalProject || undefined}
+              onChange={(e) => setTanggalProjectSelesai(e.target.value)}
+              className={inputClass}
+            />
+          </div>
+        </div>
       </div>
 
       <div className="space-y-1">
@@ -213,12 +266,6 @@ export function InquiryForm({ clientName }: { clientName?: string }) {
       {error && (
         <p className="text-caption text-error uppercase tracking-[0.1em]">
           {error}
-        </p>
-      )}
-
-      {success && (
-        <p className="text-caption text-primary uppercase tracking-[0.1em]">
-          Inquiry sent, track its status below.
         </p>
       )}
 

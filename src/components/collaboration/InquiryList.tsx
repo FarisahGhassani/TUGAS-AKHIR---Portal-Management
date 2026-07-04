@@ -5,13 +5,14 @@ import {
   type ClientInquiry,
   type InquiryStatus,
 } from "@/store/api/inquiryApi";
+import { useAppSelector } from "@/store/hooks";
 
 // Urutan tahap (nilai data tetap Indonesia, label tampilan Inggris).
 // "selesai" sengaja ditandai biar badge-nya bisa diwarnain hijau pas tercapai.
 const STATUS_FLOW: { key: InquiryStatus; label: string }[] = [
-  { key: "baru", label: "SUBMITTED" },
-  { key: "diproses", label: "IN PROGRESS" },
-  { key: "selesai", label: "COMPLETED" },
+  { key: "submitted", label: "SUBMITTED" },
+  { key: "in_progress", label: "IN PROGRESS" },
+  { key: "completed", label: "COMPLETED" },
 ];
 
 const dateFormatter = new Intl.DateTimeFormat("en-GB", {
@@ -27,8 +28,18 @@ function formatDate(iso?: string) {
   return dateFormatter.format(date).toUpperCase();
 }
 
+// Durasi proyek "27 JUN 2026 – 29 JUN 2026"; satu tanggal saja bila salah satu kosong.
+function formatRange(start?: string, end?: string) {
+  if (!start && !end) return "-";
+  if (start && end) return `${formatDate(start)} – ${formatDate(end)}`;
+  return formatDate(start || end);
+}
+
 export function InquiryList() {
-  const { data, isLoading, isError } = useGetMyInquiriesQuery();
+  const userId = useAppSelector((s) => s.auth.user?.id);
+  const { data, isLoading, isError } = useGetMyInquiriesQuery(userId ?? "", {
+    skip: !userId,
+  });
 
   if (isError) {
     return (
@@ -87,7 +98,13 @@ function InquiryCard({ inquiry }: { inquiry: ClientInquiry }) {
       <StatusPipeline activeIndex={activeIndex} />
 
       <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-gutter gap-y-3">
-        <Field label="PROJECT DATE" value={formatDate(inquiry.tanggalProject)} />
+        <Field
+          label="PROJECT TIMELINE"
+          value={formatRange(
+            inquiry.tanggalProject,
+            inquiry.tanggalProjectSelesai,
+          )}
+        />
         <Field label="CONTACT" value={inquiry.noTelepon} />
         {inquiry.modelPilihan && (
           <Field label="PREFERRED TALENT" value={inquiry.modelPilihan} wide />
@@ -118,7 +135,7 @@ function StatusPipeline({ activeIndex }: { activeIndex: number }) {
         const isCurrent = i === activeIndex;
         // Tahap "Completed" pas udah tercapai diwarnain hijau (accent), bukan
         // hitam — biar keliatan jelas kalau project-nya udah kelar.
-        const isDone = step.key === "selesai" && reached;
+        const isDone = step.key === "completed" && reached;
 
         const chipClass = isDone
           ? "border-accent text-accent"

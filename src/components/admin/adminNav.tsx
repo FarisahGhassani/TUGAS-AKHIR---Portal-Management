@@ -4,14 +4,14 @@ import {
   InboxIcon,
   ListIcon,
   MetricsIcon,
-  SettingsIcon,
   UsersIcon,
+  GalleryIcon,
 } from "@/components/dashboard/icons";
 import type { DashboardNavSection } from "@/components/dashboard/DashboardShell";
 
 export const adminSections: DashboardNavSection[] = [
   {
-    heading: "AGENCY",
+    heading: "WEBSITE",
     items: [
       { label: "OVERVIEW", href: "/admin", icon: <GridIcon /> },
       {
@@ -19,27 +19,24 @@ export const adminSections: DashboardNavSection[] = [
         href: "/admin/announcements",
         icon: <ListIcon />,
       },
+      { label: "PROJECTS", href: "/admin/projects", icon: <GalleryIcon /> },
+      { label: "SITE & LANDING", href: "/admin/assets", icon: <ListIcon /> },
     ],
   },
   {
-    heading: "PEOPLE",
+    heading: "MANAGEMENT",
     items: [
       { label: "ACCOUNTS", href: "/admin/accounts", icon: <ApplicationIcon /> },
       { label: "TALENT", href: "/admin/talent", icon: <UsersIcon /> },
       { label: "CLIENTS", href: "/admin/clients", icon: <InboxIcon /> },
-    ],
-  },
-  {
-    heading: "OPERATIONS",
-    items: [
       { label: "CLASSES", href: "/admin/classes", icon: <MetricsIcon /> },
     ],
   },
 ];
 
-export const adminFooterItems = [
-  { label: "SETTINGS", href: "/admin/settings", icon: <SettingsIcon /> },
-];
+// Tidak ada item footer khusus admin saat ini — DashboardShell tetap merender
+// tombol Sign Out di bawah.
+export const adminFooterItems: { label: string; href: string; icon?: React.ReactNode }[] = [];
 
 
 

@@ -15,6 +15,7 @@ export function FileField({
   accept,
   maxSizeMB = 5,
   optional = false,
+  hint,
   value,
   onChange,
 }: {
@@ -22,6 +23,8 @@ export function FileField({
   accept: string; // e.g. "image/*" or "image/*,application/pdf"
   maxSizeMB?: number;
   optional?: boolean;
+  // Keterangan kecil opsional di bawah field (mis. anjuran jenis foto).
+  hint?: string;
   value: PickedFile | null;
   onChange: (file: PickedFile | null) => void;
 }) {
@@ -145,6 +148,11 @@ export function FileField({
           </button>
         </div>
       )}
+
+      {/* Keterangan selalu tampil: anjuran (opsional) + batas ukuran file. */}
+      <p className="text-caption text-secondary tracking-[0.08em]">
+        {hint ? `${hint} · ` : ""}Maks {maxSizeMB}MB
+      </p>
 
       {error && (
         <p className="text-caption text-error uppercase tracking-[0.1em]">

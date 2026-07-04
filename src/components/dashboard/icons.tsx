@@ -106,6 +106,16 @@ export function ListIcon({ className }: IconProps) {
   );
 }
 
+export function GalleryIcon({ className }: IconProps) {
+  return (
+    <svg {...baseProps} className={className}>
+      <rect x="3" y="4" width="18" height="16" />
+      <path strokeLinecap="square" d="M3 16l5-5 4 4 3-3 6 6" />
+      <circle cx="8.5" cy="9" r="1.5" />
+    </svg>
+  );
+}
+
 export function UsersIcon({ className }: IconProps) {
   return (
     <svg {...baseProps} className={className}>

@@ -230,7 +230,6 @@ erDiagram
         int id PK
         varchar email UK
         varchar password
-        varchar no_telepon
         enum role "client | talent"
         datetime created_at
         datetime updated_at
@@ -250,7 +249,7 @@ erDiagram
         varchar foto_profil
         text foto_portofolio
         enum jenis "talent | kelas"
-        enum status "pending | diterima | ditolak"
+        enum status "in process | complete/cancel"
         datetime created_at
         datetime updated_at
     }

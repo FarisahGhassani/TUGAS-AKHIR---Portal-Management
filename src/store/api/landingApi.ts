@@ -28,11 +28,18 @@ export type LandingContent = {
 export const landingApi = createApi({
   reducerPath: "landingApi",
   baseQuery: fetchBaseQuery({ baseUrl: "/api/" }),
+  tagTypes: ["Landing"],
   endpoints: (builder) => ({
     getLanding: builder.query<LandingContent, void>({
       query: () => "landing",
+      providesTags: [{ type: "Landing", id: "CONTENT" }],
+    }),
+    // Admin memperbarui konten landing (kirim section yang diubah).
+    updateLanding: builder.mutation<LandingContent, Partial<LandingContent>>({
+      query: (body) => ({ url: "admin/landing", method: "PATCH", body }),
+      invalidatesTags: [{ type: "Landing", id: "CONTENT" }],
     }),
   }),
 });
 
-export const { useGetLandingQuery } = landingApi;
+export const { useGetLandingQuery, useUpdateLandingMutation } = landingApi;

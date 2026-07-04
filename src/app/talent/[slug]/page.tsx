@@ -19,10 +19,10 @@ const measurementOrder: {
   label: string;
   suffix?: string;
 }[] = [
-  { key: "tinggiBadan", label: "HEIGHT", suffix: " CM" },
-  { key: "beratBadan", label: "WEIGHT", suffix: " KG" },
-  { key: "sizeBaju", label: "CLOTHING SIZE" },
-  { key: "sizeSepatu", label: "SHOE SIZE" },
+  { key: "tinggiBadan", label: "HEIGHT", suffix: " Cm" },
+  { key: "beratBadan", label: "WEIGHT", suffix: " Kg" },
+  { key: "sizeBaju", label: "CLOTHING" },
+  { key: "sizeSepatu", label: "SHOE" },
 ];
 
 const categoryLabel: Record<TalentWorkCategory, string> = {
@@ -81,47 +81,26 @@ export default function TalentDetailPage({
       <NavBar />
       <main className="w-full max-w-editorial mx-auto pb-section">
         <section className="grid grid-cols-1 md:grid-cols-12 gap-gutter md:gap-12 px-margin-mobile md:px-margin-desktop pt-6 md:pt-8 pb-12">
-          {/* Composite card (left) — comp card: photo + name + stats */}
+          {/* Comp card photo (left) — MAIN asset: BESAR & PENUH, full color,
+              TIDAK dipotong (object-contain). Measurement dipindah ke kanan
+              supaya foto bisa besar & sisi kanan terisi seimbang. */}
           <div className="md:col-span-5">
-            <div className="border border-outline-variant md:sticky md:top-24">
-              {/* Portrait capped to viewport height so the full comp card
-                  (photo + name + measurements) lands in one screen instead of
-                  a 700px image pushing the stats below the fold. */}
-              <div className="relative h-[44vh] md:h-[52vh] w-full">
-                <Image
-                  src={talent.cover}
-                  alt={talent.coverAlt}
-                  fill
-                  priority
-                  sizes="(min-width: 768px) 42vw, 100vw"
-                  className="object-cover object-top grayscale"
-                />
-              </div>
-              <div className="p-6 border-t border-outline-variant">
-                <p className="font-display text-headline-md text-primary uppercase leading-none">
-                  {talent.name}
-                </p>
-                <p className="text-label-uppercase text-secondary uppercase mt-2">
-                  {talent.gender}
-                </p>
-                <div className="grid grid-cols-2 gap-y-5 gap-x-4 border-t border-outline-variant mt-6 pt-6">
-                  {measurementOrder.map(({ key, label, suffix }) => (
-                    <div key={key}>
-                      <p className="text-label-uppercase text-secondary mb-1.5 uppercase">
-                        {label}
-                      </p>
-                      <p className="text-body-md text-primary">
-                        {talent.measurements[key]}
-                        {suffix ?? ""}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
+            {/* Comp card di-frame 3:4 (object-cover) → ukuran wajar, penuh, tanpa
+                bidang abu-abu. Sticky supaya tetap terlihat saat baca kanan. */}
+            <div className="relative aspect-[3/4] w-full max-w-[440px] border border-outline-variant md:sticky md:top-24">
+              <Image
+                src={talent.cover}
+                alt={talent.coverAlt}
+                fill
+                priority
+                sizes="(min-width: 768px) 40vw, 100vw"
+                className="object-cover object-top"
+              />
             </div>
           </div>
 
-          {/* Description (right) */}
+          {/* Profile (right) — nama, gender, MEASUREMENTS (dipindah dari kiri),
+              SPECIALTIES, dan CTA. Di-center vertikal agar imbang dengan foto. */}
           <div className="md:col-span-7 flex flex-col justify-center pt-8 md:pt-0">
             <p className="text-label-uppercase text-secondary uppercase mb-4">
               TALENT PROFILE
@@ -133,22 +112,80 @@ export default function TalentDetailPage({
                 </span>
               ))}
             </h1>
-            <div className="flex flex-wrap gap-3 mt-8">
-              {talent.categories.map((c) => (
-                <span
-                  key={c}
-                  className="text-label-uppercase text-primary uppercase border border-outline-variant px-3 py-1.5"
-                >
-                  {categoryLabel[c]}
-                </span>
-              ))}
-            </div>
-            <p className="text-body-lg text-secondary max-w-prose mt-8">
-              {talent.bio}
+            <p className="text-label-uppercase text-secondary uppercase mt-4">
+              {talent.gender}
             </p>
-            {/* Primary action lives in the hero so the right column reads as a
-                complete unit (no hollow space) and the key client action is
-                above the fold. Talent name carried to /collaboration via RTK. */}
+
+            <p className="text-body-lg text-secondary mt-6 max-w-prose">
+              Represented exclusively by{" "}
+              <span className="text-primary">Portal Management</span>.
+            </p>
+
+            {/* INSTAGRAM — direct ke profil IG talent agar client bisa langsung
+                mengecek. Hanya tampil bila talent mengisi akunnya. */}
+            {talent.instagram && (
+              <a
+                href={`https://instagram.com/${talent.instagram}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-6 inline-flex items-center gap-2 self-start text-label-uppercase text-primary uppercase border-b border-primary pb-1 hover:text-accent hover:border-accent transition-colors"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  aria-hidden="true"
+                >
+                  <rect x="2" y="2" width="20" height="20" rx="5" />
+                  <circle cx="12" cy="12" r="4" />
+                  <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
+                </svg>
+                @{talent.instagram}
+              </a>
+            )}
+
+            {/* MEASUREMENTS — dipindah dari kartu kiri ke sini. */}
+            <dl className="grid grid-cols-2 sm:grid-cols-4 gap-y-6 gap-x-6 border-t border-outline-variant mt-10 pt-8">
+              {measurementOrder.map(({ key, label, suffix }) => (
+                <div key={key}>
+                  <dt className="text-label-uppercase text-secondary uppercase mb-1.5">
+                    {label}
+                  </dt>
+                  <dd className="text-body-md text-primary">
+                    {talent.measurements[key]}
+                    {suffix ?? ""}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+
+            {/* SPECIALTIES — keahlian/jenis pekerjaan yang dikuasai talent. */}
+            <div className="border-t border-outline-variant mt-8 pt-8">
+              <p className="text-label-uppercase text-secondary uppercase mb-4">
+                SPECIALTIES
+              </p>
+              {talent.categories.length === 0 ? (
+                <p className="text-body-md text-on-surface-variant">
+                  No specialties listed.
+                </p>
+              ) : (
+                <div className="flex flex-wrap gap-3">
+                  {talent.categories.map((c) => (
+                    <span
+                      key={c}
+                      className="text-label-uppercase text-primary uppercase border border-outline-variant px-4 py-2"
+                    >
+                      {categoryLabel[c]}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <Link
               href="/collaboration"
               onClick={() => dispatch(setInquiryTalent(talent.name))}
@@ -158,6 +195,33 @@ export default function TalentDetailPage({
             </Link>
           </div>
         </section>
+
+        {/* Petunjuk scroll — biar pengunjung tahu masih ada portfolio di bawah. */}
+        {talent.portfolio.length > 0 && (
+          <div className="flex justify-center pb-10">
+            <a
+              href="#portfolio"
+              className="group inline-flex flex-col items-center gap-1.5 text-secondary hover:text-primary transition-colors"
+            >
+              <span className="text-label-uppercase uppercase">
+                View Portfolio
+              </span>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                aria-hidden="true"
+                className="animate-bounce"
+              >
+                <path strokeLinecap="square" d="M6 9l6 6 6-6" />
+              </svg>
+            </a>
+          </div>
+        )}
 
         {/* Portfolio — works posted by the agency for this talent */}
         <PortfolioGallery items={talent.portfolio} />

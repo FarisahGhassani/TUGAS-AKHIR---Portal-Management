@@ -1,4 +1,4 @@
-import { createAnnouncement } from "@/server/store";
+import { createAnnouncement } from "@/server/db/announcements";
 import type { AnnouncementInput } from "@/store/api/announcementsApi";
 
 export const dynamic = "force-dynamic";
@@ -9,21 +9,18 @@ export async function POST(request: Request) {
   if (
     !body.judul?.trim() ||
     !body.ringkasan?.trim() ||
-    !body.kategori ||
     !body.fotoPoster?.trim() ||
     !body.tanggalBerakhir
   ) {
     return Response.json(
-      { message: "Title, summary, category, poster, and deadline are required." },
+      { message: "Title, summary, poster, and deadline are required." },
       { status: 422 },
     );
   }
-  const created = createAnnouncement({
+  const created = await createAnnouncement({
     judul: body.judul.trim(),
     ringkasan: body.ringkasan.trim(),
-    kategori: body.kategori,
     fotoPoster: body.fotoPoster,
-    fotoPosterAlt: body.fotoPosterAlt?.trim() || body.judul.trim(),
     link: body.link?.trim() || "/auth",
     tanggalBerakhir: body.tanggalBerakhir,
     status: body.status ?? "aktif",

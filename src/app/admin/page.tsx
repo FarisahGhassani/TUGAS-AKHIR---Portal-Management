@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
 import { adminFooterItems, adminSections } from "@/components/admin/adminNav";
 import { RoleGate } from "@/components/auth/RoleGate";
@@ -7,7 +8,8 @@ import { MailIcon, PendingIcon } from "@/components/dashboard/icons";
 import { useAppSelector } from "@/store/hooks";
 import {
   useGetAdminOverviewQuery,
-  type AdminNotification,
+  useGetAdminNotificationsQuery,
+  type AdminNotificationItem,
 } from "@/store/api/adminApi";
 
 export default function AdminOverviewPage() {
@@ -16,6 +18,10 @@ export default function AdminOverviewPage() {
   const isAdmin = useAppSelector((s) => s.auth.user?.role === "admin");
   const adminName = useAppSelector((s) => s.auth.user?.name);
   const { data, isLoading, isError } = useGetAdminOverviewQuery(undefined, {
+    skip: !isAdmin,
+  });
+  // Notifikasi ditarik dari DB (pendaftaran + inquiry terbaru), bukan dari mock.
+  const { data: notifications } = useGetAdminNotificationsQuery(undefined, {
     skip: !isAdmin,
   });
 
@@ -57,17 +63,17 @@ export default function AdminOverviewPage() {
           <section className="grid grid-cols-1 sm:grid-cols-3 gap-gutter">
             <MetricCard
               label="Pendaftaran Menunggu"
-              value={data.metrics.pendingApplications}
+              value={data.pendingApplications}
               accent
             />
             <MetricCard
               label="Inquiry Baru"
-              value={data.metrics.newInquiries}
+              value={data.newInquiries}
               accent
             />
             <MetricCard
               label="Talent Aktif"
-              value={data.metrics.activeTalent}
+              value={data.activeTalent}
             />
           </section>
 
@@ -78,13 +84,13 @@ export default function AdminOverviewPage() {
                 LATEST NOTIFICATIONS
               </h2>
             </div>
-            {data.notifications.length === 0 ? (
+            {(notifications ?? []).length === 0 ? (
               <p className="text-label-uppercase text-on-surface-variant uppercase">
                 Belum ada yang baru saat ini.
               </p>
             ) : (
               <ul className="flex flex-col">
-                {data.notifications.map((n) => (
+                {(notifications ?? []).map((n) => (
                   <NotificationRow key={n.id} notification={n} />
                 ))}
               </ul>
@@ -133,29 +139,48 @@ function MetricCard({
   );
 }
 
-function NotificationRow({ notification }: { notification: AdminNotification }) {
+function NotificationRow({
+  notification,
+}: {
+  notification: AdminNotificationItem;
+}) {
   const isApplication = notification.kind === "application";
   return (
-    <li className="flex items-start gap-4 py-5 border-b border-outline-variant">
-      <span
-        aria-hidden="true"
-        className="shrink-0 mt-0.5 w-10 h-10 border border-outline-variant flex items-center justify-center text-primary"
+    <li className="border-b border-outline-variant">
+      {/* Klik → submenu terkait (inquiry→clients, talent→talent, kelas→classes). */}
+      <Link
+        href={notification.href}
+        className="group flex items-center gap-4 py-5 hover:bg-surface-container-low transition-colors"
       >
-        {isApplication ? <PendingIcon /> : <MailIcon />}
-      </span>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-start justify-between gap-4">
-          <p className="text-body-md text-primary font-medium">
-            {notification.title}
-          </p>
-          <span className="shrink-0 text-caption text-on-surface-variant uppercase tracking-[0.1em]">
-            {notification.time}
-          </span>
-        </div>
-        <p className="text-body-md text-secondary mt-1 line-clamp-1">
-          {notification.detail}
+        <span
+          aria-hidden="true"
+          className="shrink-0 w-10 h-10 border border-outline-variant flex items-center justify-center text-primary"
+        >
+          {isApplication ? <PendingIcon /> : <MailIcon />}
+        </span>
+        <p className="min-w-0 flex-1 text-body-md text-primary font-medium truncate group-hover:text-accent transition-colors">
+          {notification.title}
         </p>
-      </div>
+        <span className="shrink-0 text-caption text-on-surface-variant uppercase tracking-[0.1em]">
+          {notification.time}
+        </span>
+        <span
+          aria-hidden="true"
+          className="shrink-0 text-secondary group-hover:text-accent transition-colors"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          >
+            <path strokeLinecap="square" d="M9 6l6 6-6 6" />
+          </svg>
+        </span>
+      </Link>
     </li>
   );
 }

@@ -35,6 +35,16 @@ export type AdminNotification = {
   time: string;
 };
 
+// Notifikasi ringkas (JUDUL saja) yang ditarik LANGSUNG dari tabel pendaftaran &
+// inquiry_client. `href` mengarahkan ke submenu admin terkait saat diklik.
+export type AdminNotificationItem = {
+  id: string;
+  kind: "application" | "inquiry";
+  title: string;
+  time: string;
+  href: string;
+};
+
 // Bentuk data mentah yang disimpan di server-store (tanpa turunan notifikasi).
 export type OverviewData = {
   metrics: AdminMetrics;
@@ -61,8 +71,14 @@ export const adminApi = createApi({
   baseQuery: fetchBaseQuery({ baseUrl: "/api/" }),
   tagTypes: ["AdminOverview", "Account"],
   endpoints: (builder) => ({
-    getAdminOverview: builder.query<AdminOverview, void>({
+    // Metrik dashboard dari DB (count pendaftaran/inquiry/talent).
+    getAdminOverview: builder.query<AdminMetrics, void>({
       query: () => "admin/overview",
+      providesTags: [{ type: "AdminOverview", id: "OVERVIEW" }],
+    }),
+    // Notifikasi dari DB (pendaftaran + inquiry terbaru) — judul + link submenu.
+    getAdminNotifications: builder.query<AdminNotificationItem[], void>({
+      query: () => "admin/notifications",
       providesTags: [{ type: "AdminOverview", id: "OVERVIEW" }],
     }),
     getAccounts: builder.query<AdminAccountsResponse, void>({
@@ -81,4 +97,8 @@ export const adminApi = createApi({
   }),
 });
 
-export const { useGetAdminOverviewQuery, useGetAccountsQuery } = adminApi;
+export const {
+  useGetAdminOverviewQuery,
+  useGetAdminNotificationsQuery,
+  useGetAccountsQuery,
+} = adminApi;

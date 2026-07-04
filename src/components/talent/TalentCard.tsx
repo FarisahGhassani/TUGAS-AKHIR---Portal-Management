@@ -2,17 +2,23 @@ import Image from "next/image";
 import Link from "next/link";
 import type { TalentSummary } from "@/store/api/talentApi";
 
-const aspectClass: Record<TalentSummary["thumbAspect"], string> = {
-  "3/4": "aspect-[3/4]",
-  "4/5": "aspect-[4/5]",
-  "1/1": "aspect-square",
+const categoryLabel: Record<string, string> = {
+  photoshoot: "PHOTOSHOOT",
+  runway: "RUNWAY",
+  tvc: "TVC",
+  commercial: "COMMERCIAL",
+  "muse-beauty": "MUSE / BEAUTY",
 };
 
 export function TalentCard({ talent }: { talent: TalentSummary }) {
+  // Kategori utama (pertama) sebagai label kartu; fallback ke gender.
+  const tag = talent.categories[0]
+    ? categoryLabel[talent.categories[0]]
+    : talent.gender.toUpperCase();
   return (
     <Link
       href={`/talent/${talent.slug}`}
-      className={`group relative block w-full bg-surface-container overflow-hidden ${aspectClass[talent.thumbAspect]}`}
+      className="group relative block w-full bg-surface-container overflow-hidden aspect-[3/4]"
     >
       <Image
         src={talent.cover}
@@ -26,7 +32,7 @@ export function TalentCard({ talent }: { talent: TalentSummary }) {
           {talent.name}
         </h3>
         <div className="flex items-center gap-3 text-label-uppercase text-on-primary/90 uppercase">
-          <span>{talent.division}</span>
+          <span>{tag}</span>
           <span aria-hidden="true">|</span>
           <span>{talent.heightLabel}</span>
         </div>

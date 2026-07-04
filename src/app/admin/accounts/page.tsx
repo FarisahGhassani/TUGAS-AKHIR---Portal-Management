@@ -105,13 +105,6 @@ export default function AdminAccountsPage() {
             </p>
           </header>
 
-          <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-gutter">
-            <MetricCard label="Total Akun" value={data.accounts.length} />
-            <MetricCard label="Admin" value={data.totals.admin} />
-            <MetricCard label="Talent" value={data.totals.talent} />
-            <MetricCard label="Client" value={data.totals.client} />
-          </section>
-
           <section className="flex flex-col gap-4">
             <div className="flex flex-wrap justify-between items-end border-b border-outline-variant pb-4 gap-4">
               <h2 className="font-display text-headline-md text-primary uppercase">
@@ -163,16 +156,13 @@ export default function AdminAccountsPage() {
                     <th className="py-4 text-label-uppercase text-secondary font-normal uppercase">
                       Terdaftar
                     </th>
-                    <th className="py-4 text-label-uppercase text-secondary font-normal uppercase">
-                      ID Akun
-                    </th>
                   </tr>
                 </thead>
                 <tbody className="text-body-md">
                   {visibleAccounts.length === 0 ? (
                     <tr>
                       <td
-                        colSpan={6}
+                        colSpan={5}
                         className="py-8 text-center text-secondary text-body-md"
                       >
                         Tidak ada akun yang cocok dengan filter ini.
@@ -201,9 +191,6 @@ export default function AdminAccountsPage() {
                         <td className="py-4 text-secondary">
                           {dateFormatter.format(new Date(account.createdAt))}
                         </td>
-                        <td className="py-4 text-caption text-on-surface-variant font-mono">
-                          {account.id}
-                        </td>
                       </tr>
                     ))
                   )}
@@ -224,16 +211,5 @@ export default function AdminAccountsPage() {
       )}
     </DashboardShell>
     </RoleGate>
-  );
-}
-
-function MetricCard({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="bg-surface p-6 border border-outline-variant flex flex-col gap-4">
-      <span className="text-label-uppercase text-secondary uppercase">
-        {label}
-      </span>
-      <span className="font-display text-headline-md text-primary">{value}</span>
-    </div>
   );
 }

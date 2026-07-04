@@ -2,15 +2,11 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 export type AnnouncementStatus = "aktif" | "nonaktif";
 
-export type AnnouncementKategori = "casting" | "kelas" | "umum";
-
 export type Announcement = {
   id: string;
   judul: string;
   ringkasan: string;
-  kategori: AnnouncementKategori;
   fotoPoster: string;
-  fotoPosterAlt: string;
   link: string;
   tanggalBerakhir: string;
   status: AnnouncementStatus;

@@ -1,10 +1,8 @@
-import { listAccounts } from "@/server/store";
-import type { AdminAccountsResponse } from "@/store/api/adminApi";
+import { listAccounts } from "@/server/users";
 
-// Reads live in-memory state, so it must never be cached.
+// Dibaca langsung dari tabel `user` (MySQL via Prisma) — jangan cache.
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const response: AdminAccountsResponse = listAccounts();
-  return Response.json(response);
+  return Response.json(await listAccounts());
 }

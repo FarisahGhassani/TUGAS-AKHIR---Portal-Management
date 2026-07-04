@@ -7,7 +7,7 @@ import {
   type ModellingBatch,
 } from "@/store/api/dashboardApi";
 import { useAppSelector } from "@/store/hooks";
-import { FileField, type PickedFile } from "./FileField";
+import { SubmissionThankYou } from "./SubmissionThankYou";
 
 const inputClass =
   "w-full border-0 border-b border-outline bg-transparent px-0 py-2 focus:outline-none focus:border-primary text-body-md text-primary placeholder:text-outline-variant transition-colors";
@@ -24,29 +24,25 @@ function formatDate(iso: string) {
 }
 
 /**
- * Form pendaftaran KELAS MODELLING — PRD: pilih batch yang tersedia + unggah
- * bukti pembayaran. Daftar batch diambil via RTK Query. Submit lewat RTK
- * mutation ke store pendaftaran yang sama (jenis = "kelas").
+ * Form pendaftaran KELAS MODELLING — pilih batch yang tersedia + isi data diri.
+ * Daftar batch diambil via RTK Query. Submit lewat RTK mutation ke pendaftaran
+ * (jenis = "kelas"). Pembayaran & buktinya diurus offline di luar aplikasi.
  */
-export function ClassRegistrationForm() {
+export function ClassRegistrationForm({ onClose }: { onClose: () => void }) {
   const [createApplication, { isLoading }] = useCreateApplicationMutation();
   const { data: batches, isLoading: batchesLoading } = useGetBatchesQuery();
-  const userName = useAppSelector((s) => s.auth.user?.name);
+  const userId = useAppSelector((s) => s.auth.user?.id);
 
   const [batchId, setBatchId] = useState("");
-  const [namaTalent, setNamaTalent] = useState(userName ?? "");
+  const [namaTalent, setNamaTalent] = useState("");
   const [noTelepon, setNoTelepon] = useState("");
-  const [buktiPembayaran, setBuktiPembayaran] = useState<PickedFile | null>(
-    null,
-  );
 
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
-    setSuccess(false);
 
     if (!batchId) {
       setError("Please select a batch first.");
@@ -60,22 +56,20 @@ export function ClassRegistrationForm() {
       setError("Phone number is required.");
       return;
     }
-    if (!buktiPembayaran) {
-      setError("Please upload your payment proof.");
+    if (!userId) {
+      setError("Your session expired. Please log in again.");
       return;
     }
 
     try {
       await createApplication({
+        userId,
         jenis: "kelas",
         batchId,
         namaTalent: namaTalent.trim(),
         noTelepon: noTelepon.trim(),
-        buktiPembayaran: buktiPembayaran.name,
       }).unwrap();
-      setBatchId("");
-      setBuktiPembayaran(null);
-      setSuccess(true);
+      setSubmitted(true);
     } catch (err) {
       const message =
         err && typeof err === "object" && "data" in err
@@ -84,6 +78,10 @@ export function ClassRegistrationForm() {
           : "Failed to register. Please try again.";
       setError(message);
     }
+  }
+
+  if (submitted) {
+    return <SubmissionThankYou onAction={onClose} />;
   }
 
   return (
@@ -162,26 +160,13 @@ export function ClassRegistrationForm() {
         </div>
       </div>
 
-      <div className="space-y-1">
-        <FileField
-          label="PAYMENT PROOF"
-          accept="image/*,application/pdf"
-          value={buktiPembayaran}
-          onChange={setBuktiPembayaran}
-        />
-        <p className="text-caption text-secondary mt-1">
-          Payment is processed offline; the agency validates your proof manually.
-        </p>
-      </div>
+      <p className="text-caption text-secondary">
+        Payment is arranged offline with the agency after you register.
+      </p>
 
       {error && (
         <p className="text-caption text-error uppercase tracking-[0.1em]">
           {error}
-        </p>
-      )}
-      {success && (
-        <p className="text-caption text-primary uppercase tracking-[0.1em]">
-          Class registration submitted. Track its status in your history below.
         </p>
       )}
 

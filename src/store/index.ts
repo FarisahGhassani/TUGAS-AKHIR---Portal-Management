@@ -9,6 +9,7 @@ import { adminApi } from "./api/adminApi";
 import { announcementsApi } from "./api/announcementsApi";
 import { agencyApi } from "./api/agencyApi";
 import { inquiryApi } from "./api/inquiryApi";
+import { siteAssetsApi } from "./api/siteAssetsApi";
 import authReducer from "./slices/authSlice";
 import uiReducer from "./slices/uiSlice";
 
@@ -23,6 +24,7 @@ export const store = configureStore({
     [announcementsApi.reducerPath]: announcementsApi.reducer,
     [agencyApi.reducerPath]: agencyApi.reducer,
     [inquiryApi.reducerPath]: inquiryApi.reducer,
+    [siteAssetsApi.reducerPath]: siteAssetsApi.reducer,
     auth: authReducer,
     ui: uiReducer,
   },
@@ -37,6 +39,7 @@ export const store = configureStore({
       announcementsApi.middleware,
       agencyApi.middleware,
       inquiryApi.middleware,
+      siteAssetsApi.middleware,
     ),
 });
 

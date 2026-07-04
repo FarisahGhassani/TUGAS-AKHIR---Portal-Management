@@ -20,6 +20,8 @@
 import { seedUsers, type StoredUser } from "@/mocks/data/users";
 import { adminOverview as seedOverview } from "@/mocks/data/admin";
 import { seedAnnouncements } from "@/mocks/data/announcements";
+import { slugify } from "@/mocks/data/talents";
+import { projects as seedProjects } from "@/mocks/data/projects";
 import type { AuthRole, AuthUser } from "@/store/api/authApi";
 import type {
   AdminNotification,
@@ -31,6 +33,11 @@ import type {
   Announcement,
   AnnouncementInput,
 } from "@/store/api/announcementsApi";
+import type {
+  Project,
+  ProjectInput,
+  ProjectListQuery,
+} from "@/store/api/projectsApi";
 
 const RESET_TOKEN_TTL_MS = 15 * 60 * 1000; // tokens expire after 15 minutes
 
@@ -44,6 +51,7 @@ type Store = {
   users: StoredUser[];
   overview: OverviewData;
   announcements: Announcement[];
+  projects: Project[];
   resetTokens: Map<string, ResetToken>;
 };
 
@@ -56,6 +64,7 @@ function createStore(): Store {
     users: structuredClone(seedUsers),
     overview: structuredClone(seedOverview),
     announcements: structuredClone(seedAnnouncements),
+    projects: structuredClone(seedProjects),
     resetTokens: new Map(),
   };
 }
@@ -65,6 +74,7 @@ const store = (globalForStore.__portalStore ??= createStore());
 // Defensif: kalau store lama (dari HMR) belum punya field yang baru ditambah,
 // isi dari seed supaya tidak undefined.
 store.announcements ??= structuredClone(seedAnnouncements);
+store.projects ??= structuredClone(seedProjects);
 
 const dateFormatter = new Intl.DateTimeFormat("en-US", {
   month: "short",
@@ -172,7 +182,7 @@ export function listAccounts() {
 
 // Rakit feed "notifikasi terbaru" dari pendaftaran & inquiry yang sudah ada.
 // Keduanya tersimpan newest-first (unshift), jadi kita interleave bergantian
-// supaya kedua jenis sama-sama tampil di pucuk, dibatasi 6 item.
+// supaya kedua jenis sama-sama tampil teratas, dibatasi 6 item.
 const statusLabelId: Record<ApplicationStatus, string> = {
   new: "baru",
   under_review: "ditinjau",
@@ -264,6 +274,102 @@ export function deleteAnnouncement(id: string): boolean {
   const idx = store.announcements.findIndex((a) => a.id === id);
   if (idx === -1) return false;
   store.announcements.splice(idx, 1);
+  return true;
+}
+
+// NOTE: Talent CRUD dipindah ke MySQL (Prisma) di `src/server/db/talents.ts`
+// — talent = pendaftar lolos (join pendaftaran↔talent). Tidak lagi di store ini.
+
+// projects kurang lebih crud kaya nnouncement
+// Perubahan admin PERSIST melewati reload & langsung tampil di halaman publik
+
+const projectDateLabelFmt = new Intl.DateTimeFormat("en-US", {
+  month: "long",
+  year: "numeric",
+});
+
+// ISO "2025-03-04" → "March 2025" (dipakai kartu project di sisi publik).
+function toProjectDateLabel(iso: string): string {
+  const d = new Date(`${iso}T00:00:00`);
+  return Number.isNaN(d.getTime()) ? iso : projectDateLabelFmt.format(d);
+}
+
+function uniqueProjectSlug(base: string): string {
+  const root = base || `project-${Date.now()}`;
+  let slug = root;
+  let n = 2;
+  while (store.projects.some((p) => p.slug === slug)) slug = `${root}-${n++}`;
+  return slug;
+}
+
+export function listPublicProjects(params: ProjectListQuery): Project[] {
+  return store.projects
+    .filter((p) => {
+      if (
+        params.search &&
+        !`${p.title} ${p.event}`
+          .toLowerCase()
+          .includes(params.search.toLowerCase())
+      )
+        return false;
+      if (params.type && params.type !== "all" && p.type !== params.type)
+        return false;
+      return true;
+    })
+    .sort((a, b) => b.date.localeCompare(a.date));
+}
+
+export function listAllProjects(): Project[] {
+  return [...store.projects].sort((a, b) => b.date.localeCompare(a.date));
+}
+
+export function createProject(input: ProjectInput): Project {
+  const slug = uniqueProjectSlug(slugify(input.title));
+  const project: Project = {
+    id: `p-${slug}`,
+    slug,
+    title: input.title.trim(),
+    event: input.event.trim(),
+    type: input.type,
+    date: input.date,
+    dateLabel: toProjectDateLabel(input.date),
+    cover: input.cover,
+    coverAlt: input.coverAlt?.trim() || input.title.trim(),
+    coverWidth: input.coverWidth || 1200,
+    coverHeight: input.coverHeight || 800,
+    collaborators: input.collaborators.filter((c) => c.name.trim()),
+  };
+  store.projects.unshift(project);
+  return project;
+}
+
+// Slug tidak diubah meski judul berganti supaya tautan tetap stabil.
+export function updateProject(
+  slug: string,
+  input: ProjectInput,
+): Project | undefined {
+  const idx = store.projects.findIndex((p) => p.slug === slug);
+  if (idx === -1) return undefined;
+  store.projects[idx] = {
+    ...store.projects[idx],
+    title: input.title.trim(),
+    event: input.event.trim(),
+    type: input.type,
+    date: input.date,
+    dateLabel: toProjectDateLabel(input.date),
+    cover: input.cover,
+    coverAlt: input.coverAlt?.trim() || input.title.trim(),
+    coverWidth: input.coverWidth || store.projects[idx].coverWidth,
+    coverHeight: input.coverHeight || store.projects[idx].coverHeight,
+    collaborators: input.collaborators.filter((c) => c.name.trim()),
+  };
+  return store.projects[idx];
+}
+
+export function deleteProject(slug: string): boolean {
+  const idx = store.projects.findIndex((p) => p.slug === slug);
+  if (idx === -1) return false;
+  store.projects.splice(idx, 1);
   return true;
 }
 

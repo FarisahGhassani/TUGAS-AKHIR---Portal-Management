@@ -7,14 +7,7 @@ import {
   daysUntilDeadline,
   isAnnouncementExpired,
   type Announcement,
-  type AnnouncementKategori,
 } from "@/store/api/announcementsApi";
-
-const kategoriLabel: Record<AnnouncementKategori, string> = {
-  casting: "CASTING CALL",
-  kelas: "MODELLING CLASS",
-  umum: "BULLETIN",
-};
 
 const deadlineFormatter = new Intl.DateTimeFormat("en-GB", {
   day: "2-digit",
@@ -147,14 +140,11 @@ function AnnouncementRow({
       <div className="relative md:col-span-3 aspect-[4/3] md:aspect-[4/5] w-full overflow-hidden bg-surface-container">
         <Image
           src={announcement.fotoPoster}
-          alt={announcement.fotoPosterAlt}
+          alt={announcement.judul}
           fill
           sizes="(min-width: 768px) 25vw, 100vw"
           className="object-cover scale-105 group-hover:scale-100 group-hover:grayscale transition-all duration-700"
         />
-        <span className="absolute top-3 left-3 bg-on-primary text-primary px-3 py-1 text-label-uppercase uppercase">
-          {kategoriLabel[announcement.kategori]}
-        </span>
       </div>
 
       {/* === Detail program === */}
@@ -189,12 +179,12 @@ function AnnouncementRow({
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            width="20"
-            height="20"
+            width="40"
+            height="40"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
-            strokeWidth="1.5"
+            strokeWidth="1.25"
           >
             <path strokeLinecap="square" d="M5 12h14M13 6l6 6-6 6" />
           </svg>

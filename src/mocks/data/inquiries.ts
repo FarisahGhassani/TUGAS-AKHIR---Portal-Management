@@ -1,4 +1,4 @@
-import type { ClientInquiry } from "@/store/api/inquiryApi";
+import type { ClientInquiry, InquiryStatus } from "@/store/api/inquiryApi";
 
 // Seed riwayat inquiry milik client — mencakup ketiga status agar tampilan
 // "memantau" terisi: baru, diproses (dengan catatan admin), dan selesai.
@@ -13,7 +13,7 @@ export const clientInquiries: ClientInquiry[] = [
     tanggalProject: "2026-07-18",
     modelPilihan: "2 talent runway wanita, tinggi 175cm+",
     catatanClient: "Konsep monokrom, lokasi studio Jakarta Selatan.",
-    status: "selesai",
+    status: "completed",
     catatanAdmin:
       "Kontrak selesai. Talent Aria & Naya dikonfirmasi untuk sesi 18 Juli.",
     createdAt: "2026-05-20T09:12:00.000Z",
@@ -29,7 +29,7 @@ export const clientInquiries: ClientInquiry[] = [
     tanggalProject: "2026-08-05",
     modelPilihan: "1 talent pria untuk lookbook resort.",
     catatanClient: "Butuh talent dengan pengalaman kampanye internasional.",
-    status: "diproses",
+    status: "in_progress",
     catatanAdmin:
       "Sedang menyiapkan 3 opsi portfolio talent. Akan kami kirim minggu ini.",
     createdAt: "2026-06-04T03:45:00.000Z",
@@ -45,7 +45,7 @@ export const clientInquiries: ClientInquiry[] = [
     tanggalProject: "2026-09-12",
     modelPilihan: "5 talent runway (campuran).",
     catatanClient: "Casting awal, jumlah final menyusul.",
-    status: "baru",
+    status: "submitted",
     createdAt: "2026-06-09T11:20:00.000Z",
     updatedAt: "2026-06-09T11:20:00.000Z",
   },
@@ -64,10 +64,29 @@ export function addInquiry(
   const inquiry: ClientInquiry = {
     ...input,
     id: `inq-${Date.now()}`,
-    status: "baru",
+    status: "submitted",
     createdAt: now,
     updatedAt: now,
   };
   clientInquiries.unshift(inquiry);
   return inquiry;
+}
+
+// Admin menindaklanjuti: ubah status dan/atau catatan internal. updatedAt
+// selalu di-stempel ulang supaya client melihat ada perkembangan.
+export function updateInquiry(
+  id: string,
+  patch: { status?: InquiryStatus; catatanAdmin?: string },
+): ClientInquiry | undefined {
+  const idx = clientInquiries.findIndex((i) => i.id === id);
+  if (idx === -1) return undefined;
+  clientInquiries[idx] = {
+    ...clientInquiries[idx],
+    ...(patch.status !== undefined ? { status: patch.status } : {}),
+    ...(patch.catatanAdmin !== undefined
+      ? { catatanAdmin: patch.catatanAdmin }
+      : {}),
+    updatedAt: new Date().toISOString(),
+  };
+  return clientInquiries[idx];
 }

@@ -1,4 +1,4 @@
-import { verifyCredentials } from "@/server/store";
+import { verifyCredentials } from "@/server/users";
 import type { AuthResponse, LoginRequest } from "@/store/api/authApi";
 
 export async function POST(request: Request) {
@@ -11,7 +11,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const user = verifyCredentials(body.email, body.password);
+  const user = await verifyCredentials(body.email, body.password);
   if (!user) {
     return Response.json({ message: "Invalid credentials." }, { status: 401 });
   }

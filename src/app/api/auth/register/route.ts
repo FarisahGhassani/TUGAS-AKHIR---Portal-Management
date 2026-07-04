@@ -1,4 +1,4 @@
-import { addUser, emailExists } from "@/server/store";
+import { createUser, emailExists } from "@/server/users";
 import type { AuthResponse, RegisterRequest } from "@/store/api/authApi";
 
 export async function POST(request: Request) {
@@ -11,15 +11,15 @@ export async function POST(request: Request) {
     );
   }
 
-  if (emailExists(body.email)) {
+  if (await emailExists(body.email)) {
     return Response.json(
       { message: "An account with this email already exists." },
       { status: 409 },
     );
   }
 
-  const user = addUser({
-    name: body.name,
+  const user = await createUser({
+    nama: body.name,
     email: body.email,
     password: body.password,
     role: body.role,

@@ -8,9 +8,12 @@ import { Capabilities } from "@/components/landing/Capabilities";
 import { Announcements } from "@/components/landing/Announcements";
 import { CTASection } from "@/components/landing/CTASection";
 import { useGetLandingQuery } from "@/store/api/landingApi";
+import { useGetSiteAssetsQuery } from "@/store/api/siteAssetsApi";
 
 export default function HomePage() {
   const { data, isLoading, isError } = useGetLandingQuery();
+  // Aset yang dikelola admin (Site Assets) menimpa default landing bila diisi.
+  const { data: assets } = useGetSiteAssetsQuery();
 
   // When arriving with a hash (e.g. /#essence from another page), scroll to the
   // target once the content has actually rendered.
@@ -57,9 +60,20 @@ export default function HomePage() {
           bar, see NavBar's `overlay` variant. */}
       <NavBar overlay />
       <main>
-        <Hero data={data.hero} />
+        <Hero
+          data={{
+            ...data.hero,
+            video: assets?.heroVideo || data.hero.video,
+          }}
+        />
         <Announcements />
-        <Capabilities essence={data.essence} capabilities={data.capabilities} />
+        <Capabilities
+          essence={{
+            ...data.essence,
+            image: assets?.essenceImage || data.essence.image,
+          }}
+          capabilities={data.capabilities}
+        />
         <CTASection data={data.cta} />
       </main>
       <Footer />

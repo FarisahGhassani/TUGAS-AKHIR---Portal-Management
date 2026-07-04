@@ -1,7 +1,7 @@
 import { Suspense } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { AuthCard } from "@/components/auth/AuthCard";
+import { AuthAsideImage } from "@/components/auth/AuthAsideImage";
 
 export const metadata = {
   title: "PORTAL MANAGEMENT · Authentication",
@@ -13,14 +13,7 @@ export default function AuthPage() {
   return (
     <main className="flex flex-col md:flex-row h-screen overflow-hidden">
       <div className="w-full md:w-1/2 h-48 md:h-screen relative bg-surface-container shrink-0">
-        <Image
-          src="https://images.unsplash.com/photo-1488161628813-04466f872be2?auto=format&fit=crop&w=1400&q=80"
-          alt="High-fashion editorial portrait of a model in dramatic monochrome lighting."
-          fill
-          sizes="(min-width: 768px) 50vw, 100vw"
-          priority
-          className="object-cover grayscale"
-        />
+        <AuthAsideImage />
         <div className="absolute inset-0 bg-primary/20 mix-blend-multiply" />
         <div className="absolute top-margin-mobile md:top-margin-desktop left-margin-mobile md:left-margin-desktop">
           <Link
