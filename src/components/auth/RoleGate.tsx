@@ -69,7 +69,7 @@ function AccessNotice({
       </h1>
       <p className="text-body-lg text-secondary max-w-prose mb-10">
         {loggedInWrongRole
-          ? `You are signed in as a ${roleLabel[currentRole]} account. This page is only for ${label} accounts. Sign out and log in with a ${label} account, or create one first.`
+          ? `You are logged in as a ${roleLabel[currentRole]} account. This page is only for ${label} accounts. Log out and log in with a ${label} account, or create one first.`
           : `Log in or sign up as a ${label} to access this page.`}
       </p>
       {loggedInWrongRole ? (

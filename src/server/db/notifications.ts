@@ -1,7 +1,8 @@
 // ---------------------------------------------------------------------------
 // Notifikasi admin — TANPA tabel `notification`. Cukup tarik baris TERBARU dari
-// `pendaftaran` + `inquiry_client`, tampilkan judulnya saja di dashboard admin,
-// dan sediakan `href` agar klik mengarah ke submenu terkait.
+// `pendaftaran` + `inquiry_client`, tampilkan judulnya di dashboard admin, dan
+// sediakan `href` agar klik mengarah ke submenu terkait. `unread` dihitung
+// terhadap `user.notifSeenAt` admin (kolom yang sama dipakai user) → titik merah.
 // ---------------------------------------------------------------------------
 
 import { prisma } from "@/lib/prisma";
@@ -15,9 +16,18 @@ const fmt = new Intl.DateTimeFormat("en-GB", {
 
 type Row = AdminNotificationItem & { sort: number };
 
-export async function listAdminNotifications(): Promise<
-  AdminNotificationItem[]
-> {
+export async function listAdminNotifications(
+  adminUserId?: number,
+): Promise<AdminNotificationItem[]> {
+  // notifSeenAt admin → penentu unread. Tanpa userId (mis. dipanggil internal),
+  // semuanya dianggap sudah dibaca.
+  const admin =
+    adminUserId && Number.isInteger(adminUserId)
+      ? await prisma.user.findUnique({ where: { idUser: adminUserId } })
+      : null;
+  const seen = admin?.notifSeenAt ?? null;
+  const isUnread = (createdAt: Date) => !seen || createdAt > seen;
+
   const [pendaftaran, inquiries] = await Promise.all([
     prisma.pendaftaran.findMany({ orderBy: { createdAt: "desc" }, take: 6 }),
     prisma.inquiryClient.findMany({ orderBy: { createdAt: "desc" }, take: 6 }),
@@ -32,6 +42,7 @@ export async function listAdminNotifications(): Promise<
         : `Class registration · ${p.namaTalent}`,
     time: fmt.format(p.createdAt),
     href: p.jenis === "talent" ? "/admin/talent" : "/admin/classes",
+    unread: isUnread(p.createdAt),
     sort: p.createdAt.getTime(),
   }));
 
@@ -41,6 +52,7 @@ export async function listAdminNotifications(): Promise<
     title: `Client inquiry · ${i.namaClient}`,
     time: fmt.format(i.createdAt),
     href: "/admin/clients",
+    unread: isUnread(i.createdAt),
     sort: i.createdAt.getTime(),
   }));
 

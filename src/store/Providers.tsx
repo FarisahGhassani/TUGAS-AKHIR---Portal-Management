@@ -1,50 +1,38 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { Provider } from "react-redux";
 import { store } from "./index";
 import { bacaSesi } from "./simpananSesi";
 import { setCredentials } from "./slices/authSlice";
 import { SessionToast } from "@/components/SessionToast";
 
-const isMockEnabled = process.env.NODE_ENV === "development";
+// Pulihkan sesi (localStorage) SEKALI, sebelum React merender apa pun di klien.
+// Dengan begitu store sudah berisi user yang benar sejak render pertama —
+// navbar tidak sempat tampil "guest" (LOGIN) lalu meloncat ke "logged-in".
+// bacaSesi() sendiri aman di server: ia memulangkan null bila window belum ada.
+if (typeof window !== "undefined") {
+  const sesi = bacaSesi();
+  if (sesi) store.dispatch(setCredentials(sesi));
+}
+
+// Gerbang hidrasi tanpa useEffect: server dan render pertama klien sama-sama
+// memulangkan false (layar "Initializing"), render berikutnya di klien true.
+// Jadi tidak ada hydration mismatch, dan tidak ada setState di dalam effect.
+const langgananKosong = () => () => {};
+const diKlien = () => true;
+const diServer = () => false;
 
 export function Providers({ children }: { children: React.ReactNode }) {
-  // Tahan render sampai sesi (localStorage) dipulihkan DAN mocks siap.
-  // Kalau app dirender sebelum sesi pulih, navbar sempat tampil "guest" (LOGIN)
-  // lalu loncat ke "logged-in" (LOGOUT) — itu keanehan yang dilaporkan. Dengan
-  // gerbang ini anak komponen baru muncul setelah auth state benar: tidak ada
-  // flash, dan tidak ada hydration mismatch (server & first client render
-  // sama-sama menampilkan layar "Initializing").
-  const [ready, setReady] = useState(false);
+  const siap = useSyncExternalStore(langgananKosong, diKlien, diServer);
 
-  useEffect(() => {
-    const sesi = bacaSesi();
-    if (sesi) {
-      store.dispatch(setCredentials(sesi));
-    }
-
-    let cancelled = false;
-    (async () => {
-      if (isMockEnabled) {
-        const { worker } = await import("@/mocks/browser");
-        await worker.start({
-          onUnhandledRequest: "bypass",
-          serviceWorker: { url: "/mockServiceWorker.js" },
-        });
-      }
-      if (!cancelled) setReady(true);
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  if (!ready) {
+  if (!siap) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background text-on-surface-variant text-label-uppercase uppercase tracking-[0.15em]">
-        Initializing portal…
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-background">
+        <p className="portal-loader-word text-label-uppercase text-secondary uppercase tracking-[0.25em]">
+          Portal Management
+        </p>
+        <span className="portal-loader-bar" aria-hidden="true" />
       </div>
     );
   }

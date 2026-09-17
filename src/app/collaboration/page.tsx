@@ -1,15 +1,23 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { NavBar } from "@/components/NavBar";
 import { Footer } from "@/components/Footer";
 import { InquiryForm } from "@/components/collaboration/InquiryForm";
 import { InquiryList } from "@/components/collaboration/InquiryList";
 import { RoleGate } from "@/components/auth/RoleGate";
 import { useAppSelector } from "@/store/hooks";
+import { useMarkNotificationsReadMutation } from "@/store/api/notificationsApi";
 
 export default function CollaborationPage() {
   const user = useAppSelector((s) => s.auth.user);
+
+  // Membuka halaman kolaborasi = melihat status inquiry → tandai sudah dibaca
+  // (titik merah di navbar hilang). Hanya untuk client (pemilik inquiry).
+  const [markRead] = useMarkNotificationsReadMutation();
+  useEffect(() => {
+    if (user?.role === "client" && user.id) markRead(user.id);
+  }, [user?.role, user?.id, markRead]);
 
   // Form ditampilkan "setengah" dulu (di-clamp) supaya halaman muat satu layar;
   // klik → buka penuh lalu scroll otomatis ke form saat mau diisi.
@@ -29,7 +37,7 @@ export default function CollaborationPage() {
       <main className="flex-grow">
         <RoleGate allow="client">
           {/* Hero */}
-          <section className="w-full pt-8 md:pt-10 px-margin-mobile md:px-margin-desktop max-w-editorial mx-auto">
+          <section className="w-full pt-4 md:pt-6 px-margin-mobile md:px-margin-desktop max-w-editorial mx-auto">
             <p className="text-label-uppercase text-secondary uppercase mb-4">
               CLIENT COLLABORATION
             </p>

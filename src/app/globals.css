@@ -196,3 +196,108 @@ body {
     animation: none;
   }
 }
+
+/* App boot loader — the "PORTAL MANAGEMENT" wordmark breathes (fades out/in)
+   while the session initializes, with an accent bar sweeping beneath it.
+   Deliberately brief; replaces the plain "Initializing portal…" text. */
+@keyframes portal-breathe {
+  0%,
+  100% {
+    opacity: 0.2;
+    letter-spacing: 0.02em;
+  }
+  50% {
+    opacity: 1;
+    letter-spacing: 0.06em;
+  }
+}
+
+.portal-loader-word {
+  animation: portal-breathe 1.6s ease-in-out infinite;
+}
+
+@keyframes portal-sweep {
+  0% {
+    transform: scaleX(0);
+    transform-origin: left;
+  }
+  50% {
+    transform: scaleX(1);
+    transform-origin: left;
+  }
+  50.01% {
+    transform-origin: right;
+  }
+  100% {
+    transform: scaleX(0);
+    transform-origin: right;
+  }
+}
+
+.portal-loader-bar {
+  display: block;
+  width: clamp(72px, 12vw, 112px);
+  height: 2px;
+  background: var(--color-accent);
+  animation: portal-sweep 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .portal-loader-word {
+    animation: none;
+    opacity: 1;
+  }
+
+  .portal-loader-bar {
+    animation: none;
+    transform: scaleX(1);
+  }
+}
+
+/* Scroll hint — a small arrow that nudges sideways (and pulses) to signal the
+   projects gallery can be scrolled horizontally. */
+@keyframes scroll-nudge {
+  0%,
+  100% {
+    transform: translateX(0);
+    opacity: 0.5;
+  }
+  50% {
+    transform: translateX(6px);
+    opacity: 1;
+  }
+}
+
+.scroll-hint-arrow {
+  animation: scroll-nudge 1.2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll-hint-arrow {
+    animation: none;
+    opacity: 1;
+  }
+}
+
+/* Scroll reveal — content fades up the first time it enters the viewport
+   (driven by the <Reveal> client component toggling `.reveal-in`). */
+.reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition:
+    opacity 0.7s ease,
+    transform 0.7s ease;
+}
+
+.reveal-in {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}

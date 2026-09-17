@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import { SmartImage as Image } from "@/components/ui/SmartImage";
 import { useGetSiteAssetsQuery } from "@/store/api/siteAssetsApi";
 
 // Default bila admin belum mengganti aset (Site Assets).

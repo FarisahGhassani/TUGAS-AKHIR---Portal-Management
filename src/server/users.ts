@@ -13,7 +13,12 @@
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import type { AuthRole, AuthUser } from "@/store/api/authApi";
-import type { AdminAccountsResponse } from "@/store/api/adminApi";
+import type {
+  AccountActivity,
+  AdminAccount,
+  AdminAccountsResponse,
+  EditableRole,
+} from "@/store/api/adminApi";
 import type { User } from "@prisma/client";
 
 const SALT_ROUNDS = 10;
@@ -48,6 +53,14 @@ function toAuthUser(u: User): AuthUser {
   };
 }
 
+// Bentuk akun untuk panel admin — AuthUser + tanggal daftar.
+function toAdminAccount(u: User): AdminAccount {
+  return {
+    ...toAuthUser(u),
+    createdAt: u.createdAt.toISOString(),
+  };
+}
+
 function generateToken(): string {
   const bytes = new Uint8Array(32);
   crypto.getRandomValues(bytes);
@@ -56,7 +69,8 @@ function generateToken(): string {
 
 // --- auth ------------------------------------------------------------------
 
-export async function emailExists(email: string): Promise<boolean> {
+// Cek apakah email sudah dipakai (untuk validasi keunikan saat registrasi).
+export async function checkEmail(email: string): Promise<boolean> {
   const u = await prisma.user.findUnique({
     where: { email: normalizeEmail(email) },
   });
@@ -103,13 +117,7 @@ export async function listAccounts(): Promise<AdminAccountsResponse> {
   const users = await prisma.user.findMany({
     orderBy: { createdAt: "desc" },
   });
-  const accounts = users.map((u) => ({
-    id: String(u.idUser),
-    name: u.nama,
-    email: u.email,
-    role: u.role as AuthRole,
-    createdAt: u.createdAt.toISOString(),
-  }));
+  const accounts = users.map(toAdminAccount);
   const totals = accounts.reduce<Record<AuthRole, number>>(
     (acc, a) => {
       acc[a.role] = (acc[a.role] ?? 0) + 1;
@@ -118,6 +126,59 @@ export async function listAccounts(): Promise<AdminAccountsResponse> {
     { admin: 0, talent: 0, client: 0 },
   );
   return { accounts, totals };
+}
+
+// Ubah peran akun (client ↔ talent). Mengembalikan akun terbaru, atau null bila
+// tidak ditemukan / peran tidak boleh diubah (akun admin dilindungi). Ini hanya
+// UPDATE kolom `role` — data pendaftaran/inquiry/talent milik akun tetap utuh.
+export async function updateAccountRole(
+  id: string,
+  role: EditableRole,
+): Promise<AdminAccount | null> {
+  const idUser = Number(id);
+  if (!Number.isInteger(idUser)) return null;
+  const existing = await prisma.user.findUnique({ where: { idUser } });
+  if (!existing) return null;
+  // Peran admin tidak boleh diubah dari panel ini.
+  if (existing.role === "admin") return null;
+  const updated = await prisma.user.update({
+    where: { idUser },
+    data: { role },
+  });
+  return toAdminAccount(updated);
+}
+
+// Aktivitas akun untuk modal detail — pendaftaran (talent/kelas) & inquiry yang
+// DIBUAT akun ini. Semua diturunkan dari tabel yang sudah ada; tanpa kolom baru.
+export async function getAccountActivity(
+  id: string,
+): Promise<AccountActivity | null> {
+  const idUser = Number(id);
+  if (!Number.isInteger(idUser)) return null;
+  const u = await prisma.user.findUnique({
+    where: { idUser },
+    include: {
+      pendaftaran: { orderBy: { createdAt: "desc" } },
+      inquiries: { orderBy: { createdAt: "desc" } },
+    },
+  });
+  if (!u) return null;
+  return {
+    account: toAdminAccount(u),
+    applications: u.pendaftaran.map((p) => ({
+      id: String(p.idPendaftaran),
+      title: p.namaTalent,
+      jenis: p.jenis,
+      status: p.status,
+      createdAt: p.createdAt.toISOString(),
+    })),
+    inquiries: u.inquiries.map((i) => ({
+      id: String(i.idInquiry),
+      judulProject: i.judulProject,
+      status: i.status,
+      createdAt: i.createdAt.toISOString(),
+    })),
+  };
 }
 
 // --- password reset --------------------------------------------------------
@@ -147,10 +208,12 @@ type ConsumeResult =
   | { ok: false; reason: "invalid" | "expired" | "used" };
 
 /**
- * Validate a reset token and, when valid, update the matching user's password
- * (stored as a bcrypt hash). The token is marked used so it can't be replayed.
+ * Perbarui password user setelah reset: validasi token reset dulu, lalu simpan
+ * password baru sebagai hash bcrypt. Token ditandai terpakai agar tak bisa
+ * dipakai ulang. (Nama fungsi = updatePassword; di dalamnya termasuk validasi
+ * token reset.)
  */
-export async function consumeResetToken(
+export async function updatePassword(
   token: string,
   newPassword: string,
 ): Promise<ConsumeResult> {

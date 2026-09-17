@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { FileField, type PickedFile } from "@/components/dashboard/FileField";
+import { ketikKapital } from "@/lib/teksPublik";
 import {
   useCreateAnnouncementMutation,
   useUpdateAnnouncementMutation,
@@ -159,7 +160,8 @@ export function AnnouncementForm({
               id="a-judul"
               type="text"
               value={judul}
-              onChange={(e) => setJudul(e.target.value)}
+              // Judul tampil di landing → dikapitalkan otomatis biar seragam.
+              onChange={(e) => setJudul(ketikKapital(e.target.value))}
               placeholder="mis. OPEN CASTING · FW 2026"
               className={inputClass}
             />

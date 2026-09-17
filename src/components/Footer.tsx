@@ -49,11 +49,6 @@ function TikTokIcon() {
   );
 }
 
-const policyLinks = [
-  { label: "PRIVACY POLICY", href: "/privacy" },
-  { label: "TERMS OF SERVICE", href: "/terms" },
-];
-
 const portalLinks = [
   { label: "LOGIN", href: "/auth" },
   { label: "CREATE ACCOUNT", href: "/auth" },
@@ -62,9 +57,11 @@ const portalLinks = [
 export function Footer() {
   const { data: agency } = useGetAgencyInfoQuery();
 
-  const waNumber = agency?.contact.whatsapp.number;
+  // Fallback dipakai hanya selama request /api/agency masih jalan — jangan "#",
+  // supaya tautan tidak pernah mati kalau user mengklik lebih dulu.
+  const waNumber = agency?.contact.whatsapp.number ?? "6281233407992";
   const waLabel = agency?.contact.whatsapp.displayLabel ?? "+62 812-3340-7992";
-  const waHref = waNumber ? `https://wa.me/${waNumber}` : "#";
+  const waHref = `https://wa.me/${waNumber}`;
   const igHandle = agency?.contact.instagram.handle ?? "@portal.management";
   const igHref =
     agency?.contact.instagram.url ??
@@ -125,28 +122,12 @@ export function Footer() {
           </span>
         </nav>
 
-        <nav className="md:col-span-2 flex flex-col gap-4 text-caption">
-          <p className="text-label-uppercase text-primary uppercase mb-2 flex items-center gap-2">
+        <nav className="md:col-span-3 md:col-start-10 flex flex-col gap-4 text-caption md:items-end">
+          <p className="text-label-uppercase text-primary uppercase mb-2 flex items-center gap-2 md:flex-row-reverse">
             <span className="inline-block h-1.5 w-1.5 bg-accent" aria-hidden="true" />
             PORTAL
           </p>
           {portalLinks.map((l) => (
-            <Link
-              key={l.label}
-              href={l.href}
-              className="text-secondary hover:text-accent hover:decoration-accent underline decoration-1 underline-offset-4 transition-colors uppercase"
-            >
-              {l.label}
-            </Link>
-          ))}
-        </nav>
-
-        <nav className="md:col-span-3 flex flex-col gap-4 text-caption md:items-end">
-          <p className="text-label-uppercase text-primary uppercase mb-2 flex items-center gap-2 md:flex-row-reverse">
-            <span className="inline-block h-1.5 w-1.5 bg-accent" aria-hidden="true" />
-            LEGAL
-          </p>
-          {policyLinks.map((l) => (
             <Link
               key={l.label}
               href={l.href}

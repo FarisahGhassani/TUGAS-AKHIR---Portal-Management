@@ -9,6 +9,7 @@ import { useAppSelector } from "@/store/hooks";
 import {
   useGetAdminOverviewQuery,
   useGetAdminNotificationsQuery,
+  useMarkAdminNotificationsReadMutation,
   type AdminNotificationItem,
 } from "@/store/api/adminApi";
 
@@ -17,13 +18,22 @@ export default function AdminOverviewPage() {
   // di-skip kalau bukan admin supaya data sensitif tidak ditarik tanpa hak.
   const isAdmin = useAppSelector((s) => s.auth.user?.role === "admin");
   const adminName = useAppSelector((s) => s.auth.user?.name);
+  const adminId = useAppSelector((s) => s.auth.user?.id);
   const { data, isLoading, isError } = useGetAdminOverviewQuery(undefined, {
     skip: !isAdmin,
   });
   // Notifikasi ditarik dari DB (pendaftaran + inquiry terbaru), bukan dari mock.
-  const { data: notifications } = useGetAdminNotificationsQuery(undefined, {
-    skip: !isAdmin,
+  // userId (admin) dikirim supaya server menandai mana yang belum dibaca.
+  const { data: notifications } = useGetAdminNotificationsQuery(adminId ?? "", {
+    skip: !isAdmin || !adminId,
   });
+  const [markRead] = useMarkAdminNotificationsReadMutation();
+  const unreadCount = (notifications ?? []).filter((n) => n.unread).length;
+  // Klik salah satu notifikasi = sudah dilihat → tandai semua dibaca (titik
+  // merah hilang) lalu navigasi ke submenu terkait (via Link di dalam row).
+  const onNotifRead = () => {
+    if (adminId && unreadCount > 0) markRead(adminId);
+  };
 
   return (
     <RoleGate allow="admin">
@@ -60,7 +70,7 @@ export default function AdminOverviewPage() {
           </header>
 
           {/* Hanya angka yang penting & butuh aksi. */}
-          <section className="grid grid-cols-1 sm:grid-cols-3 gap-gutter">
+          <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-gutter">
             <MetricCard
               label="Pendaftaran Menunggu"
               value={data.pendingApplications}
@@ -75,6 +85,10 @@ export default function AdminOverviewPage() {
               label="Talent Aktif"
               value={data.activeTalent}
             />
+            <MetricCard
+              label="Kelas Dibuka"
+              value={data.activeClassBatches}
+            />
           </section>
 
           {/* Notifikasi terbaru — ringkas, menggantikan tabel yang ruwet. */}
@@ -83,6 +97,15 @@ export default function AdminOverviewPage() {
               <h2 className="font-display text-headline-md text-primary uppercase">
                 LATEST NOTIFICATIONS
               </h2>
+              {unreadCount > 0 && (
+                <span className="inline-flex items-center gap-2 text-label-uppercase text-error uppercase">
+                  <span
+                    className="inline-block h-2 w-2 bg-error"
+                    aria-hidden="true"
+                  />
+                  {unreadCount} baru
+                </span>
+              )}
             </div>
             {(notifications ?? []).length === 0 ? (
               <p className="text-label-uppercase text-on-surface-variant uppercase">
@@ -91,7 +114,11 @@ export default function AdminOverviewPage() {
             ) : (
               <ul className="flex flex-col">
                 {(notifications ?? []).map((n) => (
-                  <NotificationRow key={n.id} notification={n} />
+                  <NotificationRow
+                    key={n.id}
+                    notification={n}
+                    onRead={onNotifRead}
+                  />
                 ))}
               </ul>
             )}
@@ -141,15 +168,19 @@ function MetricCard({
 
 function NotificationRow({
   notification,
+  onRead,
 }: {
   notification: AdminNotificationItem;
+  onRead: () => void;
 }) {
   const isApplication = notification.kind === "application";
   return (
     <li className="border-b border-outline-variant">
-      {/* Klik → submenu terkait (inquiry→clients, talent→talent, kelas→classes). */}
+      {/* Klik → tandai dibaca + submenu terkait (inquiry→clients, talent→talent,
+          kelas→classes). */}
       <Link
         href={notification.href}
+        onClick={onRead}
         className="group flex items-center gap-4 py-5 hover:bg-surface-container-low transition-colors"
       >
         <span
@@ -158,6 +189,13 @@ function NotificationRow({
         >
           {isApplication ? <PendingIcon /> : <MailIcon />}
         </span>
+        {/* Titik merah = notifikasi belum dibaca. */}
+        {notification.unread && (
+          <span
+            className="shrink-0 h-2 w-2 bg-error"
+            aria-label="belum dibaca"
+          />
+        )}
         <p className="min-w-0 flex-1 text-body-md text-primary font-medium truncate group-hover:text-accent transition-colors">
           {notification.title}
         </p>

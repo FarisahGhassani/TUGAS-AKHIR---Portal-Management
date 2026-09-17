@@ -40,7 +40,7 @@ export default function TalentCatalogPage() {
   return (
     <>
       <NavBar />
-      <main className="flex-grow px-margin-mobile md:px-margin-desktop py-10 md:py-12 max-w-editorial mx-auto w-full">
+      <main className="flex-grow px-margin-mobile md:px-margin-desktop pt-6 md:pt-8 pb-10 md:pb-12 max-w-editorial mx-auto w-full">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-gutter lg:gap-12">
           {/* Sidebar: title + filters (≈1/4, sticky) */}
           <aside className="lg:col-span-1 lg:sticky lg:top-24 lg:self-start flex flex-col gap-8">

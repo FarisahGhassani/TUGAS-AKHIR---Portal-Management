@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { useEffect } from "react";
 import { NavBar } from "@/components/NavBar";
 import { Footer } from "@/components/Footer";
 import { RoleGate } from "@/components/auth/RoleGate";
@@ -18,6 +18,7 @@ import {
   type TalentApplication,
   type TalentClass,
 } from "@/store/api/dashboardApi";
+import { useMarkNotificationsReadMutation } from "@/store/api/notificationsApi";
 
 type Tone = "positive" | "neutral" | "negative";
 
@@ -29,6 +30,8 @@ const applicationStatus: Record<
   in_progress: { label: "IN PROGRESS", tone: "neutral" },
   accepted: { label: "ACCEPTED", tone: "positive" },
   rejected: { label: "REJECTED", tone: "negative" },
+  // Khusus kelas — otomatis setelah kelulusan ditetapkan admin.
+  completed: { label: "COMPLETED", tone: "positive" },
 };
 
 const graduationStatus: Record<
@@ -57,6 +60,54 @@ function formatDate(iso: string) {
   return dateFormatter.format(date).toUpperCase();
 }
 
+// Nama berkas unduhan sertifikat. Ekstensi diambil dari tipe MIME pada data URL
+// (mis. "data:application/pdf;base64,…" → .pdf) agar berkas tersimpan dengan
+// ekstensi yang benar; default .pdf bila tak terbaca.
+function namaBerkasSertifikat(namaBatch: string, url: string): string {
+  const mime = /^data:([^;]+)/i.exec(url)?.[1] ?? "";
+  const ext = mime.includes("pdf")
+    ? "pdf"
+    : mime.startsWith("image/")
+      ? mime.slice("image/".length)
+      : "pdf";
+  const slug = namaBatch.trim().replace(/\s+/g, "-") || "kelas";
+  return `Sertifikat-${slug}.${ext}`;
+}
+
+// Unduh sertifikat dengan andal. Mengunduh langsung dari data URL besar via href
+// sering menghasilkan berkas korup di Chrome; jadi data URL diubah ke Blob dulu,
+// lalu diunduh lewat object URL. Untuk URL biasa (http) cukup buka anchor.
+function unduhSertifikat(url: string, filename: string) {
+  const trigger = (href: string, revoke?: string) => {
+    const a = document.createElement("a");
+    a.href = href;
+    a.download = filename;
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    if (revoke) setTimeout(() => URL.revokeObjectURL(revoke), 4000);
+  };
+
+  if (!url.startsWith("data:")) {
+    trigger(url);
+    return;
+  }
+  try {
+    const comma = url.indexOf(",");
+    const meta = url.slice(5, comma); // mis. "application/pdf;base64"
+    const mime = meta.split(";")[0] || "application/octet-stream";
+    const bin = atob(url.slice(comma + 1));
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    const objUrl = URL.createObjectURL(new Blob([bytes], { type: mime }));
+    trigger(objUrl, objUrl);
+  } catch {
+    // Jika decode gagal, coba unduh apa adanya sebagai upaya terakhir.
+    trigger(url);
+  }
+}
+
 export default function DashboardPage() {
   // Sumber kebenaran role = auth state di Redux (RTK). Data dashboard hanya
   // diambil untuk talent; akun lain ditahan RoleGate sebelum query berjalan.
@@ -74,6 +125,13 @@ export default function DashboardPage() {
     userId ?? "",
     { skip: !isTalent || !userId },
   );
+
+  // Membuka dashboard = melihat status → tandai notifikasi sudah dibaca
+  // (titik merah di navbar hilang). Hanya untuk talent (pemilik pendaftaran).
+  const [markRead] = useMarkNotificationsReadMutation();
+  useEffect(() => {
+    if (isTalent && userId) markRead(userId);
+  }, [isTalent, userId, markRead]);
 
   const close = () => dispatch(closeRegModal());
 
@@ -102,7 +160,7 @@ export default function DashboardPage() {
           <>
             {/* Personalized hero — wordmark dikecilkan supaya dua kartu
                 pendaftaran di bawahnya ikut terlihat tanpa banyak scroll. */}
-            <section className="w-full pt-6 md:pt-10 px-margin-mobile md:px-margin-desktop max-w-editorial mx-auto">
+            <section className="w-full pt-4 md:pt-6 px-margin-mobile md:px-margin-desktop max-w-editorial mx-auto">
               <p className="text-label-uppercase text-secondary uppercase mb-3">
                 WELCOME BACK
               </p>
@@ -123,11 +181,13 @@ export default function DashboardPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-gutter">
                 <RegistrationCard
                   panelKey="talent"
+                  title="Apply as Talent"
                   heading="Ready to Unlock Your Potential?"
                   body="At Portal Management, we're always looking for fresh faces with confidence, personality, and potential. Whether you're experienced or just starting out, this could be the first step in your modelling journey."
                 />
                 <RegistrationCard
                   panelKey="kelas"
+                  title="Join Modelling Class"
                   heading="Build Confidence. Learn from the Experts."
                   body="Learn catwalk, posing, personal branding, and photoshoot techniques directly from experienced mentors in a supportive and professional environment. Receive a certificate upon completion."
                 />
@@ -238,12 +298,20 @@ function ClassCard({ cls }: { cls: TalentClass }) {
         <StatusBadge {...graduationStatus[cls.statusKelulusan]} />
       </div>
       {cls.statusKelulusan === "lulus" && cls.sertifikatUrl && (
-        <Link
-          href={cls.sertifikatUrl}
+        // Sertifikat tersimpan sebagai data URL base64. Diunduh via Blob (lihat
+        // unduhSertifikat) agar berkas besar tidak korup saat diunduh dari href.
+        <button
+          type="button"
+          onClick={() =>
+            unduhSertifikat(
+              cls.sertifikatUrl!,
+              namaBerkasSertifikat(cls.namaBatch, cls.sertifikatUrl!),
+            )
+          }
           className="self-start text-label-uppercase text-primary border border-primary px-6 py-3 hover:bg-accent hover:text-on-accent hover:border-accent transition-colors uppercase"
         >
           DOWNLOAD CERTIFICATE
-        </Link>
+        </button>
       )}
     </div>
   );

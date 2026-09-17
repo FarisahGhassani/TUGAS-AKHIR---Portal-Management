@@ -3,7 +3,11 @@ import type { InquiryStatus } from "@/store/api/inquiryApi";
 
 export const dynamic = "force-dynamic";
 
-// Admin menindaklanjuti: ubah status (baru→diproses→selesai) dan/atau catatan
+// "submitted" bukan pilihan admin — status itu otomatis terpasang saat klien
+// mengirim form kolaborasi. Admin hanya menindaklanjuti: in_progress → completed.
+const ALLOWED: InquiryStatus[] = ["in_progress", "completed"];
+
+// Admin menindaklanjuti: ubah status (diproses→selesai) dan/atau catatan
 // internal yang ikut dipantau client.
 export async function PATCH(
   request: Request,
@@ -14,6 +18,9 @@ export async function PATCH(
     status?: InquiryStatus;
     catatanAdmin?: string;
   };
+  if (body.status !== undefined && !ALLOWED.includes(body.status)) {
+    return Response.json({ message: "Status tidak valid." }, { status: 422 });
+  }
   const updated = await updateInquiry(id, body);
   if (!updated) {
     return Response.json(

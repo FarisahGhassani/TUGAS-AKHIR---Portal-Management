@@ -1,7 +1,20 @@
-import { updateBatch } from "@/server/db/batches";
+import { getBatchDetail, updateBatch } from "@/server/db/batches";
 import type { BatchInput } from "@/store/api/dashboardApi";
 
 export const dynamic = "force-dynamic";
+
+// Detail kelas untuk panel admin: batch + antrean pendaftaran + murid (talent_batch).
+export async function GET(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const { id } = await params;
+  const detail = await getBatchDetail(id);
+  if (!detail) {
+    return Response.json({ message: "Batch tidak ditemukan." }, { status: 404 });
+  }
+  return Response.json(detail);
+}
 
 export async function PUT(
   request: Request,

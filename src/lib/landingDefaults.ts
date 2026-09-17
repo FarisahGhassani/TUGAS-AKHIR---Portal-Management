@@ -1,5 +1,8 @@
 import type { LandingContent } from "@/store/api/landingApi";
 
+// Isi landing bawaan. Dipakai sebagai FALLBACK oleh src/server/db/landing.ts
+// ketika baris "landing" belum ada di tabel site_setting (mis. DB baru / belum
+// pernah disunting admin), jadi halaman depan tidak pernah kosong.
 export const landingContent: LandingContent = {
   hero: {
     title: "PORTAL MANAGEMENT",

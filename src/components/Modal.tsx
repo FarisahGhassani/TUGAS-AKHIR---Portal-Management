@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 
 /**
- * Dialog editorial yang dikontrol penuh lewat props (open/onClose) — sengaja
+ * Dialog yang dikontrol penuh lewat props (open/onClose) — sengaja
  * tidak menyimpan state sendiri supaya pemanggil bebas menyetirnya dari RTK.
  * Menutup lewat tombol ✕, klik backdrop, atau tombol Escape; selama terbuka,
  * scroll body dikunci agar fokus tetap di dalam dialog.

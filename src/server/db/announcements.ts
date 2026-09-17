@@ -7,6 +7,7 @@
 // ---------------------------------------------------------------------------
 
 import { prisma } from "@/lib/prisma";
+import { judulPublik } from "@/lib/teksPublik";
 import {
   isAnnouncementExpired,
   type Announcement,
@@ -16,6 +17,16 @@ import type { Announcement as PrismaAnnouncement } from "@prisma/client";
 
 function toISODate(d: Date | null): string {
   return d ? d.toISOString().slice(0, 10) : "";
+}
+
+// Tujuan CTA boleh halaman internal ("/talent") ATAU URL kustom di luar sistem.
+// URL kustom yang ditulis tanpa skema ("contoh.com/daftar") akan dianggap tautan
+// relatif oleh browser, jadi dilengkapi https:// di sini. Kosong → "/auth".
+function linkTujuan(raw?: string): string {
+  const value = raw?.trim();
+  if (!value) return "/auth";
+  if (value.startsWith("/") || /^https?:\/\//i.test(value)) return value;
+  return `https://${value}`;
 }
 
 function toAnnouncement(row: PrismaAnnouncement): Announcement {
@@ -52,10 +63,10 @@ export async function createAnnouncement(
 ): Promise<Announcement> {
   const row = await prisma.announcement.create({
     data: {
-      judul: input.judul.trim(),
+      judul: judulPublik(input.judul),
       ringkasan: input.ringkasan.trim(),
       fotoPoster: input.fotoPoster,
-      link: input.link?.trim() || "/auth",
+      link: linkTujuan(input.link),
       tanggalBerakhir: input.tanggalBerakhir
         ? new Date(input.tanggalBerakhir)
         : null,
@@ -78,14 +89,14 @@ export async function updateAnnouncement(
   const row = await prisma.announcement.update({
     where: { idAnnouncement },
     data: {
-      ...(patch.judul !== undefined ? { judul: patch.judul.trim() } : {}),
+      ...(patch.judul !== undefined ? { judul: judulPublik(patch.judul) } : {}),
       ...(patch.ringkasan !== undefined
         ? { ringkasan: patch.ringkasan.trim() }
         : {}),
       ...(patch.fotoPoster !== undefined
         ? { fotoPoster: patch.fotoPoster }
         : {}),
-      ...(patch.link !== undefined ? { link: patch.link.trim() || "/auth" } : {}),
+      ...(patch.link !== undefined ? { link: linkTujuan(patch.link) } : {}),
       ...(patch.tanggalBerakhir !== undefined
         ? {
             tanggalBerakhir: patch.tanggalBerakhir

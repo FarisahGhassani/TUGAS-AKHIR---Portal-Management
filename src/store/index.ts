@@ -10,6 +10,7 @@ import { announcementsApi } from "./api/announcementsApi";
 import { agencyApi } from "./api/agencyApi";
 import { inquiryApi } from "./api/inquiryApi";
 import { siteAssetsApi } from "./api/siteAssetsApi";
+import { notificationsApi } from "./api/notificationsApi";
 import authReducer from "./slices/authSlice";
 import uiReducer from "./slices/uiSlice";
 
@@ -25,6 +26,7 @@ export const store = configureStore({
     [agencyApi.reducerPath]: agencyApi.reducer,
     [inquiryApi.reducerPath]: inquiryApi.reducer,
     [siteAssetsApi.reducerPath]: siteAssetsApi.reducer,
+    [notificationsApi.reducerPath]: notificationsApi.reducer,
     auth: authReducer,
     ui: uiReducer,
   },
@@ -40,6 +42,7 @@ export const store = configureStore({
       agencyApi.middleware,
       inquiryApi.middleware,
       siteAssetsApi.middleware,
+      notificationsApi.middleware,
     ),
 });
 

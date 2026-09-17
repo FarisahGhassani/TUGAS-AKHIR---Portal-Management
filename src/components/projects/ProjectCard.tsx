@@ -1,4 +1,4 @@
-import Image from "next/image";
+import { SmartImage as Image } from "@/components/ui/SmartImage";
 import type { Project } from "@/store/api/projectsApi";
 
 // Tinggi kartu seragam (lewat --proj-card-h); lebar = tinggi × rasio asli

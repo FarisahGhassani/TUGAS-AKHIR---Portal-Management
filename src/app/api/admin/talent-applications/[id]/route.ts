@@ -1,13 +1,15 @@
 import {
-  decideTalentApplication,
+  updateTalentApplication,
   getTalentApplicationDetail,
 } from "@/server/db/talents";
 import type { TalentApplicationStatus } from "@/store/api/talentApi";
 
 export const dynamic = "force-dynamic";
 
+// "submitted" TIDAK ada di sini: status itu terbentuk otomatis saat pelamar
+// mengirim form, bukan sesuatu yang bisa dipilih admin. Admin hanya memproses
+// (in_progress) lalu memutuskan (accepted/rejected).
 const ALLOWED: TalentApplicationStatus[] = [
-  "submitted",
   "in_progress",
   "accepted",
   "rejected",
@@ -39,7 +41,7 @@ export async function PATCH(
   if (!body.status || !ALLOWED.includes(body.status)) {
     return Response.json({ message: "Status tidak valid." }, { status: 422 });
   }
-  const updated = await decideTalentApplication(id, body.status);
+  const updated = await updateTalentApplication(id, body.status);
   if (!updated) {
     return Response.json(
       { message: "Pendaftaran tidak ditemukan." },

@@ -1,5 +1,6 @@
-import Image from "next/image";
+import { SmartImage as Image } from "@/components/ui/SmartImage";
 import Link from "next/link";
+import { Reveal } from "@/components/landing/Reveal";
 import type { LandingContent } from "@/store/api/landingApi";
 
 /**
@@ -7,7 +8,9 @@ import type { LandingContent } from "@/store/api/landingApi";
  * The essence intro pairs editorial copy with a portrait image, then the
  * capabilities sit below as a numbered index — the figures carry the rhythm
  * instead of repeated hairlines, keeping it minimal but not flat. Anchored
- * with id="essence" for the ABOUT nav.
+ * with id="essence" for the ABOUT nav. Copy is kept at a normal reading size
+ * (not oversized display) and simply fades up on scroll so it feels alive
+ * without being loud.
  */
 export function Capabilities({
   essence,
@@ -25,30 +28,22 @@ export function Capabilities({
         {/* About / Essence — copy + editorial portrait */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-gutter items-center">
           <div className="md:col-span-7 flex flex-col gap-6">
-            <p className="text-label-uppercase text-secondary uppercase">
-              {essence.eyebrow}
-            </p>
-            <p className="text-headline-lg-mobile md:text-headline-md text-primary max-w-prose leading-[1.25]">
-              {essence.body}
-            </p>
-            <Link
-              href="/talent"
-              className="group inline-flex items-center gap-3 self-start text-label-uppercase text-primary uppercase hover:gap-4 hover:text-accent transition-all"
-            >
-              {essence.ctaLabel}
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                aria-hidden="true"
-              >
-                <path strokeLinecap="square" d="M5 12h14M13 6l6 6-6 6" />
-              </svg>
-            </Link>
+            <Reveal>
+              <p className="text-label-uppercase text-accent uppercase flex items-center gap-3">
+                <span
+                  className="inline-block h-px w-8 bg-accent"
+                  aria-hidden="true"
+                />
+                {essence.eyebrow}
+              </p>
+            </Reveal>
+            {/* Ukuran baca normal (bukan display raksasa) — muncul sedikit
+                setelah eyebrow supaya terasa "per bagian". */}
+            <Reveal delay={120}>
+              <p className="text-headline-lg-mobile md:text-headline-md text-primary max-w-prose leading-[1.25]">
+                {essence.body}
+              </p>
+            </Reveal>
           </div>
 
           <div className="md:col-span-5 relative aspect-[4/5] w-full overflow-hidden group">
@@ -69,7 +64,12 @@ export function Capabilities({
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-gutter gap-y-8 md:gap-y-10">
             {capabilities.items.map((item, index) => (
-              <div key={item.title} className="group/cap flex flex-col gap-4">
+              <Reveal
+                as="div"
+                key={item.title}
+                delay={index * 90}
+                className="group/cap flex flex-col gap-4"
+              >
                 <span
                   aria-hidden="true"
                   className="font-display text-headline-md leading-none text-outline-variant group-hover/cap:text-accent transition-colors"
@@ -79,17 +79,33 @@ export function Capabilities({
                 <h3 className="text-label-uppercase text-primary uppercase">
                   {item.title}
                 </h3>
-                <p className="text-body-md text-secondary">
-                  {item.description}
-                </p>
-                <Link
-                  href="/services"
-                  className="mt-1 text-caption text-primary hover:text-accent transition-colors uppercase"
-                >
-                  LEARN MORE
-                </Link>
-              </div>
+                <p className="text-body-md text-secondary">{item.description}</p>
+              </Reveal>
             ))}
+          </div>
+
+          {/* Satu ajakan untuk seluruh blok kapabilitas — menggantikan "learn
+              more" per item, mengarah ke portofolio projects. Ditengahkan. */}
+          <div className="mt-10 md:mt-12 pt-8 border-t border-outline-variant text-center">
+            <Link
+              href="/projects"
+              className="group inline-flex items-center justify-center gap-4 font-display text-headline-lg-mobile md:text-headline-md text-primary uppercase leading-none tracking-tight hover:text-accent transition-colors"
+            >
+              SEE PORTAL MANAGEMENT PROJECTS
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="28"
+                height="28"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                aria-hidden="true"
+                className="shrink-0 transition-transform group-hover:translate-x-1"
+              >
+                <path strokeLinecap="square" d="M5 12h14M13 6l6 6-6 6" />
+              </svg>
+            </Link>
           </div>
         </div>
       </div>

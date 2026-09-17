@@ -1,4 +1,4 @@
-import { consumeResetToken } from "@/server/users";
+import { updatePassword } from "@/server/users";
 import type { ResetPasswordRequest } from "@/store/api/authApi";
 
 const MIN_PASSWORD_LENGTH = 6;
@@ -20,7 +20,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const result = await consumeResetToken(body.token, body.password);
+  const result = await updatePassword(body.token, body.password);
   if (!result.ok) {
     // We keep the message generic across invalid/expired/used so the response
     // doesn't reveal token state to anyone guessing tokens.

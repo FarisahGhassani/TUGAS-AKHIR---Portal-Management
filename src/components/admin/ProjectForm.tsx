@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { FileField, type PickedFile } from "@/components/dashboard/FileField";
+import { ketikKapital } from "@/lib/teksPublik";
 import {
   useCreateProjectMutation,
   useUpdateProjectMutation,
@@ -158,7 +159,8 @@ export function ProjectForm({
           id="p-title"
           type="text"
           value={title}
-          onChange={(e) => setTitle(e.target.value)}
+          // Judul & event tampil di halaman publik → kapital otomatis.
+          onChange={(e) => setTitle(ketikKapital(e.target.value))}
           placeholder="mis. AURORA · SS25 CAMPAIGN"
           className={inputClass}
         />
@@ -172,7 +174,7 @@ export function ProjectForm({
           id="p-event"
           type="text"
           value={event}
-          onChange={(e) => setEvent(e.target.value)}
+          onChange={(e) => setEvent(ketikKapital(e.target.value))}
           placeholder="mis. PARIS FASHION WEEK"
           className={inputClass}
         />

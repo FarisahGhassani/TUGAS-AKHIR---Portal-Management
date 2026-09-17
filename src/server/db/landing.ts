@@ -6,7 +6,7 @@
 // ---------------------------------------------------------------------------
 
 import { prisma } from "@/lib/prisma";
-import { landingContent as defaults } from "@/mocks/data/landing";
+import { landingContent as defaults } from "@/lib/landingDefaults";
 import type { LandingContent } from "@/store/api/landingApi";
 
 const LANDING_KEY = "landing";

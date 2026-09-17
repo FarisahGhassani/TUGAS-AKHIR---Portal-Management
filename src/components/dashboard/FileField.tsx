@@ -1,8 +1,15 @@
 "use client";
 
 import { useId, useRef, useState } from "react";
+import { processUpload } from "@/lib/processUpload";
 
 export type PickedFile = { name: string; type: string; dataUrl: string };
+
+// Batas aman panjang string yang boleh disimpan ke DB (di bawah `max_allowed_packet`
+// MySQL/XAMPP default ±1MB). Gambar sudah dikompres jauh di bawah ini; penjaga
+// ini terutama menangkap berkas non-gambar (mis. PDF) yang terlalu besar, agar
+// muncul pesan jelas alih-alih error server saat menyimpan.
+const SAFE_STORE_CHARS = 900_000;
 
 /**
  * Upload field yang BENAR-BENAR memproses file: membacanya jadi data URL
@@ -31,6 +38,17 @@ export function FileField({
   const inputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  // Field khusus gambar? (semua tipe accept adalah image/*). Kalau ya, gambar
+  // dikompres otomatis sebelum disimpan, jadi batas input bisa longgar — batas
+  // ini hanya mencegah file raksasa yang berat didecode di browser. Field lain
+  // (mis. PDF) tetap pakai maxSizeMB apa adanya.
+  const imageOnly = accept
+    .split(",")
+    .filter(Boolean)
+    .every((a) => a.trim().toLowerCase().startsWith("image/"));
+  const inputLimitMB = imageOnly ? Math.max(maxSizeMB, 15) : maxSizeMB;
 
   function matchesAccept(file: File): boolean {
     return accept.split(",").some((raw) => {
@@ -42,7 +60,7 @@ export function FileField({
     });
   }
 
-  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     setError(null);
     if (!file) {
@@ -55,17 +73,33 @@ export function FileField({
       if (inputRef.current) inputRef.current.value = "";
       return;
     }
-    if (file.size > maxSizeMB * 1024 * 1024) {
-      setError(`File must be under ${maxSizeMB}MB.`);
+    if (file.size > inputLimitMB * 1024 * 1024) {
+      setError(`File must be under ${inputLimitMB}MB.`);
       onChange(null);
       if (inputRef.current) inputRef.current.value = "";
       return;
     }
-    const reader = new FileReader();
-    reader.onerror = () => setError("Could not read the file. Try again.");
-    reader.onload = () =>
-      onChange({ name: file.name, type: file.type, dataUrl: String(reader.result) });
-    reader.readAsDataURL(file);
+    // Gambar dikompres agar aman disimpan (base64 kecil); berkas lain apa adanya.
+    setBusy(true);
+    try {
+      const { dataUrl, type } = await processUpload(file);
+      if (dataUrl.length > SAFE_STORE_CHARS) {
+        // Praktis hanya kena berkas non-gambar (mis. PDF) yang terlalu besar.
+        setError(
+          "File terlalu besar untuk disimpan. Gunakan berkas yang lebih kecil (± di bawah 1MB).",
+        );
+        onChange(null);
+        if (inputRef.current) inputRef.current.value = "";
+        return;
+      }
+      onChange({ name: file.name, type, dataUrl });
+    } catch {
+      setError("Could not read the file. Try again.");
+      onChange(null);
+      if (inputRef.current) inputRef.current.value = "";
+    } finally {
+      setBusy(false);
+    }
   }
 
   function clear() {
@@ -95,7 +129,12 @@ export function FileField({
       {!value ? (
         <label
           htmlFor={inputId}
-          className="inline-flex items-center gap-2 border border-outline px-4 py-2 text-label-uppercase uppercase text-primary cursor-pointer hover:border-accent hover:text-accent transition-colors"
+          aria-busy={busy}
+          className={`inline-flex items-center gap-2 border border-outline px-4 py-2 text-label-uppercase uppercase text-primary transition-colors ${
+            busy
+              ? "opacity-60 cursor-wait pointer-events-none"
+              : "cursor-pointer hover:border-accent hover:text-accent"
+          }`}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -109,7 +148,7 @@ export function FileField({
           >
             <path strokeLinecap="square" d="M12 16V4M6 10l6-6 6 6M4 20h16" />
           </svg>
-          Choose file
+          {busy ? "Processing…" : "Choose file"}
         </label>
       ) : (
         <div className="flex items-center gap-3 border border-outline-variant p-2">
@@ -128,6 +167,19 @@ export function FileField({
           <span className="flex-1 text-body-md text-primary truncate">
             {value.name}
           </span>
+          {/* Ganti file: pakai file input yang sama tanpa harus hapus dulu, agar
+              gambar lama tak "hilang" saat admin ingin menggantinya (mode edit). */}
+          <label
+            htmlFor={inputId}
+            aria-busy={busy}
+            className={`text-label-uppercase uppercase text-primary transition-colors px-2 ${
+              busy
+                ? "opacity-60 cursor-wait pointer-events-none"
+                : "cursor-pointer hover:text-accent"
+            }`}
+          >
+            {busy ? "…" : "Ganti"}
+          </label>
           <button
             type="button"
             onClick={clear}
@@ -149,9 +201,13 @@ export function FileField({
         </div>
       )}
 
-      {/* Keterangan selalu tampil: anjuran (opsional) + batas ukuran file. */}
+      {/* Keterangan selalu tampil: anjuran (opsional) + info ukuran. Gambar
+          dioptimalkan otomatis, jadi tak perlu takut ukuran sumber. */}
       <p className="text-caption text-secondary tracking-[0.08em]">
-        {hint ? `${hint} · ` : ""}Maks {maxSizeMB}MB
+        {hint ? `${hint} · ` : ""}
+        {imageOnly
+          ? `Gambar dioptimalkan otomatis (maks ${inputLimitMB}MB)`
+          : `Maks ${maxSizeMB}MB`}
       </p>
 
       {error && (

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { LogoutButton } from "@/components/auth/LogoutButton";
+import { NotificationDot } from "@/components/NotificationDot";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setActiveMenu } from "@/store/slices/uiSlice";
 
@@ -20,6 +21,7 @@ export function NavBar({ overlay = false }: { overlay?: boolean } = {}) {
   const dispatch = useAppDispatch();
   const activeMenu = useAppSelector((s) => s.ui.activeMenu);
   const isLoggedIn = useAppSelector((s) => s.auth.user !== null);
+  const role = useAppSelector((s) => s.auth.user?.role);
 
   function isActive(href: string, label: string) {
     if (activeMenu === label) return true;
@@ -91,6 +93,9 @@ export function NavBar({ overlay = false }: { overlay?: boolean } = {}) {
                 }`}
               >
                 {item.label}
+                {item.label === "APPLY" && role === "talent" && (
+                  <NotificationDot />
+                )}
               </Link>
             );
           })}
@@ -112,6 +117,7 @@ export function NavBar({ overlay = false }: { overlay?: boolean } = {}) {
             className="uppercase text-on-primary bg-primary px-5 py-3 hover:bg-accent transition-colors"
           >
             LET&apos;S COLLABORATE
+            {role === "client" && <NotificationDot />}
           </Link>
         </div>
 
@@ -154,6 +160,9 @@ export function NavBar({ overlay = false }: { overlay?: boolean } = {}) {
                 }`}
               >
                 {item.label}
+                {item.label === "APPLY" && role === "talent" && (
+                  <NotificationDot />
+                )}
               </Link>
             );
           })}
@@ -178,6 +187,7 @@ export function NavBar({ overlay = false }: { overlay?: boolean } = {}) {
               className="uppercase text-on-primary bg-primary py-3 text-center hover:bg-accent transition-colors"
             >
               LET&apos;S COLLABORATE
+              {role === "client" && <NotificationDot />}
             </Link>
           </div>
         </div>

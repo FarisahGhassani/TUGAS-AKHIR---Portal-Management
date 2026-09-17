@@ -6,8 +6,9 @@ import type {
 
 export const dynamic = "force-dynamic";
 
+// Tanpa "submitted": status awal itu otomatis dari pendaftar. Admin hanya boleh
+// memproses (in_progress) lalu menerima/menolak.
 const STATUS: ClassRegistrationStatus[] = [
-  "submitted",
   "in_progress",
   "accepted",
   "rejected",

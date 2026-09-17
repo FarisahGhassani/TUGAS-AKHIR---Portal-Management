@@ -5,17 +5,19 @@ import { openRegModal } from "@/store/slices/uiSlice";
 
 /**
  * Kartu pendaftaran yang berdiri sendiri — seluruh kartu bisa diklik untuk
- * membuka modal form (jenis = panelKey). Tanpa eyebrow, tanpa tombol CTA di
- * dalam, dan judul memakai font yang sama dengan body (bukan font-display).
- * Aksen edgy-nya cukup satu: panah diagonal besar di pojok kanan atas. State
- * modal disetir lewat RTK (ui slice).
+ * membuka modal form (jenis = panelKey). `title` adalah judul highlight singkat
+ * (mis. "APPLY AS TALENT") yang jadi kepala kartu; `heading` + `body` di
+ * bawahnya sebagai deskripsi. Aksen edgy-nya cukup satu: panah diagonal besar
+ * di pojok kanan atas. State modal disetir lewat RTK (ui slice).
  */
 export function RegistrationCard({
   panelKey,
+  title,
   heading,
   body,
 }: {
   panelKey: "talent" | "kelas";
+  title: string;
   heading: string;
   body: string;
 }) {
@@ -45,10 +47,15 @@ export function RegistrationCard({
         </svg>
       </span>
 
-      <h3 className="text-headline-md font-semibold text-on-primary leading-tight pr-16">
-        {heading}
+      {/* Judul highlight — kepala kartu, font display biar menonjol. */}
+      <h3 className="font-display text-headline-md text-on-primary uppercase leading-none tracking-tight pr-16">
+        {title}
       </h3>
-      <p className="text-body-md text-on-primary/70 mt-4 max-w-prose">{body}</p>
+      {/* Deskripsi: tagline + body (tidak dihapus, cuma jadi sekunder). */}
+      <p className="text-body-lg font-medium text-on-primary/90 mt-4 leading-snug pr-8">
+        {heading}
+      </p>
+      <p className="text-body-md text-on-primary/70 mt-3 max-w-prose">{body}</p>
     </button>
   );
 }

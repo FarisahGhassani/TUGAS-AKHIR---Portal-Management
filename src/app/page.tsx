@@ -28,15 +28,12 @@ export default function HomePage() {
 
   if (isLoading || !data) {
     return (
-      <>
-        <NavBar />
-        <main className="min-h-[60vh] flex items-center justify-center">
-          <p className="text-label-uppercase text-on-surface-variant uppercase">
-            Loading…
-          </p>
-        </main>
-        <Footer />
-      </>
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-background">
+        <p className="portal-loader-word text-label-uppercase text-secondary uppercase tracking-[0.25em]">
+          Portal Management
+        </p>
+        <span className="portal-loader-bar" aria-hidden="true" />
+      </div>
     );
   }
 

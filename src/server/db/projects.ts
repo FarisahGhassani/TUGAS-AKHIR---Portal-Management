@@ -7,7 +7,8 @@
 // ---------------------------------------------------------------------------
 
 import { prisma } from "@/lib/prisma";
-import { slugify } from "@/mocks/data/talents";
+import { judulPublik } from "@/lib/teksPublik";
+import { slugify } from "@/lib/talentFormat";
 import type {
   Project,
   ProjectCollaborator,
@@ -103,8 +104,8 @@ export async function createProject(input: ProjectInput): Promise<Project> {
   const row = await prisma.projects.create({
     data: {
       slug,
-      judul: input.title.trim(),
-      event: input.event.trim(),
+      judul: judulPublik(input.title),
+      event: judulPublik(input.event),
       tipe: input.type,
       tglMulai: input.date ? new Date(input.date) : null,
       tglSelesai: input.endDate ? new Date(input.endDate) : null,
@@ -128,8 +129,8 @@ export async function updateProject(
   const row = await prisma.projects.update({
     where: { slug },
     data: {
-      judul: input.title.trim(),
-      event: input.event.trim(),
+      judul: judulPublik(input.title),
+      event: judulPublik(input.event),
       tipe: input.type,
       tglMulai: input.date ? new Date(input.date) : null,
       tglSelesai: input.endDate ? new Date(input.endDate) : null,

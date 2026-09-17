@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
 import { Pagination } from "@/components/Pagination";
 import { Modal } from "@/components/Modal";
@@ -265,6 +265,9 @@ export default function AdminClientsPage() {
   );
 }
 
+// Status inquiry TIDAK dipilih manual — dia AKIBAT dari aksi admin: membuka
+// modal ini otomatis menandai IN PROGRESS (sedang ditindak); tombol "Tandai
+// Selesai" yang menutupnya menjadi COMPLETED.
 function ManageInquiry({
   inquiry,
   onDone,
@@ -279,12 +282,37 @@ function ManageInquiry({
   const [catatanAdmin, setCatatanAdmin] = useState(inquiry.catatanAdmin ?? "");
   const [error, setError] = useState<string | null>(null);
 
+  // Auto-proses sekali per pembukaan: submitted → in_progress.
+  const autoProcessed = useRef(false);
+  useEffect(() => {
+    if (inquiry.status === "submitted" && !autoProcessed.current) {
+      autoProcessed.current = true;
+      updateInquiry({ id: inquiry.id, status: "in_progress" });
+      setStatus("in_progress");
+    }
+  }, [inquiry.status, inquiry.id, updateInquiry]);
+
+  // Simpan catatan (status tidak disentuh — sudah diatur otomatis).
   async function handleSave() {
     setError(null);
     try {
       await updateInquiry({
         id: inquiry.id,
-        status,
+        catatanAdmin: catatanAdmin.trim(),
+      }).unwrap();
+      onDone();
+    } catch {
+      setError("Gagal menyimpan perubahan.");
+    }
+  }
+
+  // Tindak lanjut selesai → COMPLETED (catatan ikut tersimpan).
+  async function handleComplete() {
+    setError(null);
+    try {
+      await updateInquiry({
+        id: inquiry.id,
+        status: "completed",
         catatanAdmin: catatanAdmin.trim(),
       }).unwrap();
       onDone();
@@ -313,19 +341,14 @@ function ManageInquiry({
       </dl>
 
       <div>
-        <label htmlFor="inq-status" className="text-label-uppercase text-secondary block uppercase mb-2">
+        <p className="text-label-uppercase text-secondary uppercase mb-2">
           Status
-        </label>
-        <select
-          id="inq-status"
-          value={status}
-          onChange={(e) => setStatus(e.target.value as InquiryStatus)}
-          className="w-full border-0 border-b border-outline bg-transparent px-0 py-2 focus:outline-none focus:border-primary text-body-md text-primary appearance-none rounded-none cursor-pointer pr-8 transition-colors"
-        >
-          <option value="submitted">SUBMITTED</option>
-          <option value="in_progress">IN PROGRESS</option>
-          <option value="completed">COMPLETED</option>
-        </select>
+        </p>
+        <StatusBadge status={status} />
+        <p className="text-caption text-secondary tracking-[0.06em] mt-2">
+          Status berubah otomatis: membuka inquiry menandainya IN PROGRESS;
+          tekan &ldquo;Tandai Selesai&rdquo; bila tindak lanjut sudah tuntas.
+        </p>
       </div>
 
       <div>
@@ -360,10 +383,20 @@ function ManageInquiry({
           type="button"
           onClick={handleSave}
           disabled={isLoading}
-          className="px-6 py-3 bg-primary text-on-primary text-label-uppercase hover:bg-accent transition-colors uppercase disabled:opacity-50"
+          className="px-6 py-3 border border-outline text-secondary text-label-uppercase hover:text-accent hover:border-accent transition-colors uppercase disabled:opacity-50"
         >
-          {isLoading ? "MENYIMPAN…" : "Simpan"}
+          {isLoading ? "MENYIMPAN…" : "Simpan Catatan"}
         </button>
+        {status !== "completed" && (
+          <button
+            type="button"
+            onClick={handleComplete}
+            disabled={isLoading}
+            className="px-6 py-3 bg-primary text-on-primary text-label-uppercase hover:bg-accent transition-colors uppercase disabled:opacity-50"
+          >
+            {isLoading ? "MENYIMPAN…" : "Tandai Selesai"}
+          </button>
+        )}
       </div>
     </div>
   );

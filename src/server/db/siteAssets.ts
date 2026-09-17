@@ -25,7 +25,7 @@ export async function getSiteAssets(): Promise<SiteAssets> {
   };
 }
 
-export async function setSiteAsset(
+export async function updateSiteAsset(
   key: SiteAssetKey,
   value: string,
 ): Promise<SiteAssets> {

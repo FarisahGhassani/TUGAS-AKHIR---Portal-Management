@@ -18,7 +18,9 @@ export async function POST(request: Request) {
     );
   }
 
-  if (body.jenis === "talent") {
+  if (body.jenis === "talent" || body.jenis === "kelas") {
+    // Form talent & kelas memakai template biodata yang SAMA (kelas tanpa
+    // portofolio + wajib memilih batch) — validasinya pun sama.
     const ok =
       body.namaTalent?.trim() &&
       body.gender &&
@@ -33,14 +35,13 @@ export async function POST(request: Request) {
       body.fotoProfil?.trim();
     if (!ok) {
       return Response.json(
-        { message: "Please complete all required talent fields." },
+        { message: "Please complete all required fields." },
         { status: 422 },
       );
     }
-  } else if (body.jenis === "kelas") {
-    if (!body.namaTalent?.trim() || !body.noTelepon?.trim() || !body.batchId) {
+    if (body.jenis === "kelas" && !body.batchId) {
       return Response.json(
-        { message: "Select a batch and complete your details to register." },
+        { message: "Select a batch to register." },
         { status: 422 },
       );
     }

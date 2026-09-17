@@ -38,7 +38,8 @@ export function TalentRegistrationForm({ onClose }: { onClose: () => void }) {
   const [noTelepon, setNoTelepon] = useState("");
   const [instagram, setInstagram] = useState("");
   const [fotoProfil, setFotoProfil] = useState<PickedFile | null>(null);
-  const [fotoPortofolio, setFotoPortofolio] = useState<PickedFile | null>(null);
+  // Portofolio kini berupa tautan (opsional) — bukan berkas yang diunggah.
+  const [portofolioUrl, setPortofolioUrl] = useState("");
 
   const [error, setError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
@@ -55,6 +56,11 @@ export function TalentRegistrationForm({ onClose }: { onClose: () => void }) {
     if (!noTelepon.trim()) return "Phone number is required.";
     if (!instagram.trim()) return "Instagram account is required.";
     if (!fotoProfil?.dataUrl) return "Profile photo is required.";
+    // Portofolio boleh kosong; kalau diisi, minimal harus berbentuk tautan
+    // (skema https:// ditambahkan di server bila pengguna tidak menulisnya).
+    const porto = portofolioUrl.trim();
+    if (porto && !/^(https?:\/\/)?[\w-]+(\.[\w-]+)+\/?/i.test(porto))
+      return "Enter a valid portfolio link (e.g. drive.google.com/…).";
     return null;
   }
 
@@ -86,7 +92,7 @@ export function TalentRegistrationForm({ onClose }: { onClose: () => void }) {
         noTelepon: noTelepon.trim(),
         instagram: instagram.trim().replace(/^@+/, ""),
         fotoProfil: fotoProfil!.dataUrl,
-        fotoPortofolio: fotoPortofolio?.dataUrl,
+        portofolioUrl: portofolioUrl.trim() || undefined,
       }).unwrap();
       setSubmitted(true);
     } catch (err) {
@@ -261,13 +267,26 @@ export function TalentRegistrationForm({ onClose }: { onClose: () => void }) {
         onChange={setFotoProfil}
       />
 
-      <FileField
-        label="PORTFOLIO"
-        accept="image/*,application/pdf"
-        optional
-        value={fotoPortofolio}
-        onChange={setFotoPortofolio}
-      />
+      {/* Portofolio = LINK, bukan berkas: ringan di DB dan tim kami selalu
+          melihat versi terbaru yang kamu update sendiri. */}
+      <div className="space-y-1">
+        <label htmlFor="t-porto" className={labelClass}>
+          PORTFOLIO LINK <span className="text-secondary">(optional)</span>
+        </label>
+        <input
+          id="t-porto"
+          type="url"
+          inputMode="url"
+          value={portofolioUrl}
+          onChange={(e) => setPortofolioUrl(e.target.value)}
+          placeholder="drive.google.com/… or instagram.com/…"
+          className={inputClass}
+        />
+        <p className="text-caption text-outline">
+          Attach a portfolio link — Google Drive, Instagram, or any online
+          documentation. Leave empty if you don&apos;t have one.
+        </p>
+      </div>
 
       {error && (
         <p className="text-caption text-error uppercase tracking-[0.1em]">

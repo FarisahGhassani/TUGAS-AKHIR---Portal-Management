@@ -1,4 +1,4 @@
-import { findTalentBySlug } from "@/server/db/talents";
+import { getTalent } from "@/server/db/talents";
 
 export const dynamic = "force-dynamic";
 
@@ -7,7 +7,7 @@ export async function GET(
   { params }: { params: Promise<{ slug: string }> },
 ) {
   const { slug } = await params;
-  const talent = await findTalentBySlug(slug);
+  const talent = await getTalent(slug);
   if (!talent) {
     return Response.json({ message: "Talent not found." }, { status: 404 });
   }

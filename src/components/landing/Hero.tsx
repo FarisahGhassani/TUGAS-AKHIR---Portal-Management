@@ -49,18 +49,26 @@ export function Hero({ data }: Props) {
       </h1>
 
       {/* Filling — full-width editorial video grows to take the leftover height
-          (object-cover so any aspect ratio fills without distortion). The hero
-          image doubles as the poster while the clip loads. */}
-      <div className="relative w-full flex-1 min-h-0 overflow-hidden group">
+          (object-cover so any aspect ratio fills without distortion). No poster:
+          the old landing image used to flash for ~1s before the clip played, so
+          the area sits on a neutral surface until the video's first frame
+          decodes (preload=auto keeps that near-instant). */}
+      <div className="relative w-full flex-1 min-h-0 overflow-hidden group bg-surface-container">
+        {/* Purely decorative background clip: no controls, no Picture-in-Picture,
+            and pointer-events-none so a click can't pop the browser's PiP/media
+            overlay (which briefly showed the frame as if an asset "leaked"). */}
         <video
           src={data.video}
-          poster={data.image}
           aria-label={data.imageAlt}
           autoPlay
           muted
           loop
           playsInline
-          className="absolute inset-0 h-full w-full object-cover object-center"
+          preload="auto"
+          disablePictureInPicture
+          controlsList="nodownload nofullscreen noremoteplayback"
+          tabIndex={-1}
+          className="pointer-events-none absolute inset-0 h-full w-full object-cover object-center"
         />
       </div>
 

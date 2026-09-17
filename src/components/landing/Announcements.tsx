@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import { SmartImage as Image } from "@/components/ui/SmartImage";
 import Link from "next/link";
 import {
   useGetActiveAnnouncementsQuery,
@@ -130,12 +130,14 @@ function AnnouncementRow({
 }) {
   const daysLeft = daysUntilDeadline(announcement.tanggalBerakhir, now);
   const isUrgent = daysLeft <= 3;
+  // Tujuan CTA boleh di luar sistem (URL kustom dari panel admin) — link luar
+  // dibuka di tab baru lewat <a>, link internal tetap lewat <Link>.
+  const isExternal = /^https?:\/\//i.test(announcement.link);
+  const rowClass =
+    "group grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-gutter items-center border-b border-outline-variant py-5 md:py-6 transition-colors hover:border-accent";
 
-  return (
-    <Link
-      href={announcement.link}
-      className="group grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-gutter items-center border-b border-outline-variant py-5 md:py-6 transition-colors hover:border-accent"
-    >
+  const content = (
+    <>
       {/* === Poster event — full colour, eased to grayscale on hover === */}
       <div className="relative md:col-span-3 aspect-[4/3] md:aspect-[4/5] w-full overflow-hidden bg-surface-container">
         <Image
@@ -190,6 +192,21 @@ function AnnouncementRow({
           </svg>
         </span>
       </div>
+    </>
+  );
+
+  return isExternal ? (
+    <a
+      href={announcement.link}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={rowClass}
+    >
+      {content}
+    </a>
+  ) : (
+    <Link href={announcement.link} className={rowClass}>
+      {content}
     </Link>
   );
 }

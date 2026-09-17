@@ -34,6 +34,10 @@ enum StatusPendaftaran {
   in_progress
   accepted
   rejected
+  // Khusus pendaftaran KELAS: terpasang OTOMATIS saat admin menetapkan
+  // kelulusan (lulus/tidak_lulus) — urusan kelasnya selesai. Pendaftaran talent
+  // berakhir di accepted/rejected dan tidak pernah memakai nilai ini.
+  completed
 }
 
 enum JenisPendaftaran {
@@ -71,10 +75,15 @@ enum TipeProject {
 
 model User {
   idUser    Int      @id @default(autoincrement()) @map("id_user")
-  nama      String
+  nama      String   @db.VarChar(100)
   email     String   @unique
   password  String
   role      Role
+  // Kapan user terakhir "melihat" notifikasi. Notifikasi TIDAK disimpan sebagai
+  // tabel tersendiri — diturunkan dari perubahan status pendaftaran/inquiry;
+  // sebuah item dianggap "unread" jika updatedAt-nya > notifSeenAt. Ditandai
+  // sudah dibaca dengan menyetel kolom ini = now().
+  notifSeenAt DateTime? @map("notif_seen_at")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -88,20 +97,23 @@ model Pendaftaran {
   idPendaftaran  Int               @id @default(autoincrement()) @map("id_pendaftaran")
   idUser         Int               @map("id_user")
   idBatch        Int?              @map("id_batch")
-  namaTalent     String            @map("nama_talent")
+  namaTalent     String            @map("nama_talent") @db.VarChar(100)
   gender         Gender            @default(female)
   tanggalLahir   DateTime          @map("tanggal_lahir") @db.Date
-  tinggiBadan    Int               @map("tinggi_badan")
-  beratBadan     Int               @map("berat_badan")
-  sizeBaju       String            @map("size_baju")
-  sizeSepatu     String            @map("size_sepatu")
-  noIdentitas    String            @map("no_identitas")
-  noTelepon      String            @map("no_telepon")
+  tinggiBadan    Int               @map("tinggi_badan") @db.UnsignedSmallInt
+  beratBadan     Int               @map("berat_badan") @db.UnsignedSmallInt
+  sizeBaju       String            @map("size_baju") @db.VarChar(20)
+  sizeSepatu     String            @map("size_sepatu") @db.VarChar(10)
+  noIdentitas    String            @map("no_identitas") @db.VarChar(20)
+  noTelepon      String            @map("no_telepon") @db.VarChar(20)
   // Akun Instagram talent (handle tanpa "@" atau URL). Opsional — ditampilkan di
   // halaman detail talent supaya client bisa langsung menuju IG si talent.
   instagram      String?           @map("instagram")
   fotoProfil     String            @map("foto_profil") @db.LongText
-  fotoPortofolio String?           @map("foto_portofolio") @db.LongText
+  // Portofolio = LINK (Google Drive / akun IG portofolio / dokumentasi), bukan
+  // berkas yang diunggah: baris DB tetap ringan dan agency selalu melihat versi
+  // terbaru yang di-update sendiri oleh talent. Opsional (boleh null).
+  portofolioUrl  String?           @map("portofolio_url") @db.VarChar(500)
   jenis          JenisPendaftaran
   status         StatusPendaftaran @default(submitted)
   createdAt      DateTime          @default(now()) @map("created_at")
@@ -139,7 +151,7 @@ model BatchModelling {
   // Tidak ada kolom "batch ke" — nomor batch ("Batch 01") diturunkan dari URUTAN
   // baris saat dibaca, jadi tetap rapat tanpa lompat meski ada batch dihapus.
   namaBatch         String      @map("nama_batch")
-  kuota             Int
+  kuota             Int         @db.UnsignedSmallInt
   tglMulai          DateTime    @map("tgl_mulai") @db.Date
   tglBerakhir       DateTime    @map("tgl_berakhir") @db.Date
   statusPendaftaran StatusBatch @default(buka) @map("status_pendaftaran")
@@ -174,9 +186,9 @@ model InquiryClient {
   // Nullable: form kolaborasi publik bisa dikirim tanpa sesi login. Jika klien
   // login, isi dengan id_user-nya; jika tamu, biarkan null.
   idUser         Int?          @map("id_user")
-  namaClient     String        @map("nama_client")
-  noTelepon      String        @map("no_telepon")
-  judulProject   String        @map("judul_project")
+  namaClient     String        @map("nama_client") @db.VarChar(100)
+  noTelepon      String        @map("no_telepon") @db.VarChar(20)
+  judulProject   String        @map("judul_project") @db.VarChar(150)
   brand          String?
   jenisJob       String        @map("jenis_job")
   // Timeline proyek yang diminta klien: rentang mulai–selesai (durasi).
@@ -199,7 +211,9 @@ model Announcement {
   judul           String
   // Ringkasan tampil di landing. (kategori & alt poster dihapus per revisi.)
   ringkasan       String             @db.Text
-  fotoPoster      String?            @map("foto_poster")
+  // Poster disimpan sebagai data URL base64 → WAJIB LongText. Tanpa ini kolom
+  // jadi VARCHAR(191) dan data URL terpotong diam-diam (gambar rusak).
+  fotoPoster      String?            @map("foto_poster") @db.LongText
   link            String?
   tanggalBerakhir DateTime?          @map("tanggal_berakhir") @db.Date
   status          StatusAnnouncement @default(aktif)

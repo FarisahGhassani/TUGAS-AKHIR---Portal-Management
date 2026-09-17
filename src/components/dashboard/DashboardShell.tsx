@@ -127,7 +127,7 @@ export function DashboardShell({
         );
       })}
       <LogoutButton
-        label="SIGN OUT"
+        label="LOGOUT"
         onClick={() => setMobileOpen(false)}
         className="flex items-center gap-3 border-l-2 border-transparent pl-3 pr-2 py-2.5 text-label-uppercase uppercase text-secondary hover:text-accent transition-colors text-left"
       />

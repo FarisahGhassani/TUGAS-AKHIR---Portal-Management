@@ -35,7 +35,7 @@ export const adminSections: DashboardNavSection[] = [
 ];
 
 // Tidak ada item footer khusus admin saat ini — DashboardShell tetap merender
-// tombol Sign Out di bawah.
+// tombol Logout di bawah.
 export const adminFooterItems: { label: string; href: string; icon?: React.ReactNode }[] = [];
 
 

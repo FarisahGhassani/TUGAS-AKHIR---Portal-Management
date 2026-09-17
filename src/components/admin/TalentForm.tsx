@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { FileField, type PickedFile } from "@/components/dashboard/FileField";
 import { UnitInput, CLOTHING_SIZES } from "@/components/dashboard/UnitInput";
-import { parseShoeEu } from "@/mocks/data/talents";
+import { parseShoeEu } from "@/lib/talentFormat";
 import {
   useCreateTalentMutation,
   useUpdateTalentMutation,

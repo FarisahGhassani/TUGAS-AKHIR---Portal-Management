@@ -9,7 +9,7 @@
 // ---------------------------------------------------------------------------
 
 import { prisma } from "@/lib/prisma";
-import { slugify, cmToHeightLabel, formatShoeSize } from "@/mocks/data/talents";
+import { slugify, cmToHeightLabel, formatShoeSize } from "@/lib/talentFormat";
 import type {
   Talent,
   TalentApplication,
@@ -148,9 +148,8 @@ export async function listAllTalents(): Promise<Talent[]> {
   return allTalents();
 }
 
-export async function findTalentBySlug(
-  slug: string,
-): Promise<Talent | undefined> {
+// Ambil satu talent untuk halaman detail (lookup lewat slug → id).
+export async function getTalent(slug: string): Promise<Talent | undefined> {
   const idTalent = parseInt(slug, 10);
   if (!Number.isInteger(idTalent)) return undefined;
   const row = await prisma.talent.findUnique({
@@ -297,14 +296,14 @@ export async function getTalentApplicationDetail(
     noTelepon: p.noTelepon,
     instagram: p.instagram?.trim() || undefined,
     fotoProfil: p.fotoProfil,
-    fotoPortofolio: p.fotoPortofolio ?? undefined,
+    portofolioUrl: p.portofolioUrl ?? undefined,
   };
 }
 
 // Putuskan pendaftaran: ubah status. accepted → buat baris talent (muncul di
 // katalog, comcard = foto profil, kategori/portfolio kosong → dilengkapi admin
 // lewat roster). rejected → keluarkan dari katalog bila sempat masuk.
-export async function decideTalentApplication(
+export async function updateTalentApplication(
   id: string,
   status: TalentApplicationStatus,
 ): Promise<TalentApplication | null> {

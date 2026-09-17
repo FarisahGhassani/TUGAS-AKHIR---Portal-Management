@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
 import { Pagination } from "@/components/Pagination";
 import { Modal } from "@/components/Modal";
@@ -13,7 +13,7 @@ import {
   useDeleteTalentMutation,
   useGetTalentApplicationsQuery,
   useGetTalentApplicationDetailQuery,
-  useDecideTalentApplicationMutation,
+  useUpdateTalentApplicationMutation,
   type Talent,
   type TalentApplicationStatus,
   type TalentGender,
@@ -420,6 +420,10 @@ function TalentApplicationsPanel() {
 
 // Review data submitted pelamar (foto + biodata lengkap) sebelum admin
 // memutuskan. Data dibaca on-demand dari API detail via RTK.
+//
+// Status TIDAK diubah manual oleh admin — dia AKIBAT dari aksi admin:
+// membuka review ini otomatis menandai pendaftaran IN PROGRESS (sedang
+// ditinjau); klik Terima/Tolak yang memutuskan accepted/rejected.
 function ApplicationReview({
   id,
   onDone,
@@ -429,7 +433,16 @@ function ApplicationReview({
 }) {
   const { data, isLoading, isError } = useGetTalentApplicationDetailQuery(id);
   const [decide, { isLoading: deciding }] =
-    useDecideTalentApplicationMutation();
+    useUpdateTalentApplicationMutation();
+
+  // Auto-proses sekali per pembukaan modal: submitted → in_progress.
+  const autoProcessed = useRef(false);
+  useEffect(() => {
+    if (data?.status === "submitted" && !autoProcessed.current) {
+      autoProcessed.current = true;
+      decide({ id, status: "in_progress" });
+    }
+  }, [data?.status, id, decide]);
 
   async function act(status: TalentApplicationStatus) {
     if (!data) return;
@@ -488,33 +501,29 @@ function ApplicationReview({
         </dl>
       </div>
 
-      {data.fotoPortofolio && (
-        <div>
-          <p className="text-label-uppercase text-secondary uppercase mb-2">
-            Portofolio
-          </p>
+      <div>
+        <p className="text-label-uppercase text-secondary uppercase mb-2">
+          Portofolio
+        </p>
+        {data.portofolioUrl ? (
+          // Link milik talent (Drive / IG / dokumentasi) — isinya selalu versi
+          // terbaru karena talent yang mengelola sendiri sumbernya.
           <a
-            href={data.fotoPortofolio}
+            href={data.portofolioUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-label-uppercase text-primary hover:text-accent transition-colors uppercase"
+            className="text-body-md text-primary hover:text-accent transition-colors break-all underline underline-offset-4"
           >
-            ↗ Buka portofolio
+            ↗ {data.portofolioUrl}
           </a>
-        </div>
-      )}
+        ) : (
+          <p className="text-caption text-on-surface-variant uppercase tracking-[0.1em]">
+            Tidak melampirkan link portofolio.
+          </p>
+        )}
+      </div>
 
       <div className="flex justify-end gap-3">
-        {data.status === "submitted" && (
-          <button
-            type="button"
-            disabled={deciding}
-            onClick={() => act("in_progress")}
-            className="px-5 py-2.5 border border-outline text-secondary text-label-uppercase hover:text-accent hover:border-accent transition-colors uppercase disabled:opacity-50"
-          >
-            Proses
-          </button>
-        )}
         {data.status !== "rejected" && (
           <button
             type="button"

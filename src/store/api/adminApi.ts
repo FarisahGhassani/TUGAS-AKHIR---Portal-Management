@@ -37,12 +37,14 @@ export type AdminNotification = {
 
 // Notifikasi ringkas (JUDUL saja) yang ditarik LANGSUNG dari tabel pendaftaran &
 // inquiry_client. `href` mengarahkan ke submenu admin terkait saat diklik.
+// `unread` = lebih baru dari `user.notifSeenAt` admin (untuk titik merah).
 export type AdminNotificationItem = {
   id: string;
   kind: "application" | "inquiry";
   title: string;
   time: string;
   href: string;
+  unread: boolean;
 };
 
 // Bentuk data mentah yang disimpan di server-store (tanpa turunan notifikasi).
@@ -66,6 +68,33 @@ export type AdminAccountsResponse = {
   totals: Record<AuthRole, number>;
 };
 
+// Peran yang boleh di-set admin lewat "Ubah Role" — hanya client ↔ talent.
+// Akun admin tidak boleh diubah perannya.
+export type EditableRole = Exclude<AuthRole, "admin">;
+
+// Aktivitas satu akun — diturunkan dari data yang SUDAH ada (pendaftaran &
+// inquiry milik user), bukan tabel baru. Dipakai modal detail akun.
+export type AccountApplication = {
+  id: string;
+  title: string; // namaTalent
+  jenis: "talent" | "kelas";
+  status: string; // StatusPendaftaran
+  createdAt: string;
+};
+
+export type AccountInquiry = {
+  id: string;
+  judulProject: string;
+  status: string; // StatusInquiry
+  createdAt: string;
+};
+
+export type AccountActivity = {
+  account: AdminAccount;
+  applications: AccountApplication[];
+  inquiries: AccountInquiry[];
+};
+
 export const adminApi = createApi({
   reducerPath: "adminApi",
   baseQuery: fetchBaseQuery({ baseUrl: "/api/" }),
@@ -77,9 +106,20 @@ export const adminApi = createApi({
       providesTags: [{ type: "AdminOverview", id: "OVERVIEW" }],
     }),
     // Notifikasi dari DB (pendaftaran + inquiry terbaru) — judul + link submenu.
-    getAdminNotifications: builder.query<AdminNotificationItem[], void>({
-      query: () => "admin/notifications",
-      providesTags: [{ type: "AdminOverview", id: "OVERVIEW" }],
+    // userId = admin yang login; dipakai server menghitung `unread` vs notifSeenAt.
+    getAdminNotifications: builder.query<AdminNotificationItem[], string>({
+      query: (userId) =>
+        `admin/notifications?userId=${encodeURIComponent(userId)}`,
+      providesTags: [{ type: "AdminOverview", id: "NOTIF" }],
+    }),
+    // Tandai notifikasi admin sudah dibaca (set notifSeenAt admin = now).
+    markAdminNotificationsRead: builder.mutation<{ ok: boolean }, string>({
+      query: (userId) => ({
+        url: "admin/notifications",
+        method: "POST",
+        body: { userId },
+      }),
+      invalidatesTags: [{ type: "AdminOverview", id: "NOTIF" }],
     }),
     getAccounts: builder.query<AdminAccountsResponse, void>({
       query: () => "admin/accounts",
@@ -94,11 +134,34 @@ export const adminApi = createApi({
             ]
           : [{ type: "Account" as const, id: "LIST" }],
     }),
+    // Detail aktivitas satu akun (pendaftaran + inquiry miliknya) untuk modal.
+    getAccountActivity: builder.query<AccountActivity, string>({
+      query: (id) => `admin/accounts/${id}`,
+      providesTags: (_result, _error, id) => [{ type: "Account", id }],
+    }),
+    // Ubah peran akun (client ↔ talent) → UPDATE kolom role di DB.
+    updateAccountRole: builder.mutation<
+      AdminAccount,
+      { id: string; role: EditableRole }
+    >({
+      query: ({ id, role }) => ({
+        url: `admin/accounts/${id}`,
+        method: "PATCH",
+        body: { role },
+      }),
+      invalidatesTags: (_result, _error, { id }) => [
+        { type: "Account", id: "LIST" },
+        { type: "Account", id },
+      ],
+    }),
   }),
 });
 
 export const {
   useGetAdminOverviewQuery,
   useGetAdminNotificationsQuery,
+  useMarkAdminNotificationsReadMutation,
   useGetAccountsQuery,
+  useGetAccountActivityQuery,
+  useUpdateAccountRoleMutation,
 } = adminApi;

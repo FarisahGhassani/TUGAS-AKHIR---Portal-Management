@@ -98,7 +98,7 @@ export type TalentApplication = {
 };
 
 // Detail lengkap data yang di-submit pelamar (untuk modal review admin sebelum
-// memutuskan). Foto profil & portfolio = data URL.
+// memutuskan). Foto profil = data URL; portofolio = LINK (opsional).
 export type TalentApplicationDetail = TalentApplication & {
   tanggalLahir: string;
   beratBadan: number;
@@ -108,7 +108,7 @@ export type TalentApplicationDetail = TalentApplication & {
   noTelepon: string;
   instagram?: string;
   fotoProfil: string;
-  fotoPortofolio?: string;
+  portofolioUrl?: string;
 };
 
 export const talentApi = createApi({
@@ -191,7 +191,9 @@ export const talentApi = createApi({
       providesTags: (_r, _e, id) => [{ type: "Application", id }],
     }),
     // Putuskan pendaftaran: in_progress / accepted (→ masuk katalog) / rejected.
-    decideTalentApplication: builder.mutation<
+    // Detail (id) ikut di-invalidate supaya modal review yang sedang terbuka
+    // langsung menampilkan status barunya (mis. auto in_progress saat dibuka).
+    updateTalentApplication: builder.mutation<
       TalentApplication,
       { id: string; status: TalentApplicationStatus }
     >({
@@ -200,8 +202,9 @@ export const talentApi = createApi({
         method: "PATCH",
         body: { status },
       }),
-      invalidatesTags: [
+      invalidatesTags: (_r, _e, { id }) => [
         { type: "Application", id: "LIST" },
+        { type: "Application", id },
         { type: "Talent", id: "LIST" },
       ],
     }),
@@ -217,5 +220,5 @@ export const {
   useDeleteTalentMutation,
   useGetTalentApplicationsQuery,
   useGetTalentApplicationDetailQuery,
-  useDecideTalentApplicationMutation,
+  useUpdateTalentApplicationMutation,
 } = talentApi;

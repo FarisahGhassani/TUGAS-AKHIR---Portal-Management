@@ -1,13 +1,17 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import type { TalentGender } from "./talentApi";
 
-// PENDAFTARAN.status — Submitted → In Progress → Accepted/Rejected (dua outcome
-// terminal). Seragam di UI & DB.
+// PENDAFTARAN.status — status BERUBAH OTOMATIS sebagai akibat aksi admin:
+// submitted (kirim form) → in_progress (admin membuka review) → accepted/
+// rejected (admin memutuskan). Khusus KELAS ada akhir tambahan: completed —
+// terpasang otomatis saat kelulusan ditetapkan. Talent berhenti di accepted/
+// rejected.
 export type ApplicationStatus =
   | "submitted"
   | "in_progress"
   | "accepted"
-  | "rejected";
+  | "rejected"
+  | "completed";
 // PENDAFTARAN.jenis
 export type ApplicationType = "talent" | "kelas";
 // PENDAFTARAN_BATCH.status_pembayaran
@@ -42,7 +46,9 @@ export type DashboardSummary = {
 };
 
 // Batch kelas modelling. `batchKe` (nomor "Batch 01") DITURUNKAN server dari
-// urutan baris — bukan kolom DB & bukan input admin.
+// urutan baris — bukan kolom DB & bukan input admin. `muridCount`/`pendingCount`
+// juga turunan (hitungan talent_batch & pendaftaran yang menunggu), dipakai untuk
+// ringkasan di kartu batch.
 export type ModellingBatch = {
   id: string;
   namaBatch: string;
@@ -51,6 +57,30 @@ export type ModellingBatch = {
   tglMulai: string;
   tglBerakhir: string;
   statusPendaftaran: "buka" | "tutup";
+  muridCount: number;
+  lulusCount: number;
+  pendingCount: number;
+};
+
+// Satu baris talent_batch (murid yang JOIN sebuah batch) untuk tabel detail kelas.
+export type BatchStudent = {
+  // id pendaftaran — dipakai sebagai id pada PATCH class-registrations.
+  id: string;
+  idTalentBatch: string;
+  name: string;
+  email: string;
+  noTelepon: string;
+  joinedAt: string; // tanggal masuk talent_batch (ISO)
+  statusLulus: GraduationStatus;
+  sertifikatUrl?: string;
+};
+
+// Isi halaman detail kelas: batch + pendaftaran yang masih menunggu keputusan +
+// daftar murid (talent_batch).
+export type BatchDetail = {
+  batch: ModellingBatch;
+  pending: ClassRegistration[];
+  students: BatchStudent[];
 };
 
 // Payload create/edit batch dari panel admin (id & batchKe diturunkan server).
@@ -62,18 +92,26 @@ export type BatchInput = {
   statusPendaftaran: "buka" | "tutup";
 };
 
-// Status pendaftaran kelas (= pendaftaran.status di DB).
-export type ClassRegistrationStatus =
-  | "submitted"
-  | "in_progress"
-  | "accepted"
-  | "rejected";
+// Status pendaftaran kelas (= pendaftaran.status di DB). "completed" dipasang
+// OTOMATIS server saat admin menetapkan kelulusan — bukan pilihan manual.
+export type ClassRegistrationStatus = ApplicationStatus;
 
 // Satu pendaftaran KELAS (pendaftaran jenis=kelas) untuk panel approval admin.
+// Biodata ikut disertakan (form kelas memakai template yang sama dengan form
+// talent) supaya modal review admin menampilkan data submitted lengkap.
 export type ClassRegistration = {
   id: string;
   name: string;
+  gender: TalentGender;
+  tanggalLahir: string;
+  tinggiBadan: number;
+  beratBadan: number;
+  sizeBaju: string;
+  sizeSepatu: string; // sudah diformat "42 EU / 8 UK" oleh server
+  noIdentitas: string;
   noTelepon: string;
+  instagram?: string;
+  fotoProfil: string;
   batchId: string | null;
   batchLabel: string;
   status: ClassRegistrationStatus;
@@ -96,15 +134,19 @@ export type TalentRegistrationInput = {
   noTelepon: string;
   instagram: string; // handle IG (tanpa "@"), wajib — portof atau pribadi
   fotoProfil: string; // wajib
-  fotoPortofolio?: string; // opsional, boleh kosong (null di DB)
+  // Portofolio = LINK (Drive / IG / dokumentasi), opsional — bukan berkas.
+  portofolioUrl?: string;
 };
 
-// Pendaftaran kelas (PRD: PENDAFTARAN jenis = "kelas" + PENDAFTARAN_BATCH).
-export type ClassRegistrationInput = {
+// Pendaftaran kelas — template biodata SAMA dengan form talent (tanpa link
+// portofolio) + pilihan batch, karena keduanya menulis ke tabel `pendaftaran`
+// yang sama; hanya aliran datanya yang berbeda (kelas → talent_batch).
+export type ClassRegistrationInput = Omit<
+  TalentRegistrationInput,
+  "jenis" | "portofolioUrl"
+> & {
   jenis: "kelas";
   batchId: string;
-  namaTalent: string;
-  noTelepon: string;
 };
 
 // Dua form berbeda, tapi keduanya menulis ke "database" pendaftaran yang sama,
@@ -135,6 +177,16 @@ export const dashboardApi = createApi({
               { type: "Batch" as const, id: "LIST" },
             ]
           : [{ type: "Batch" as const, id: "LIST" }],
+    }),
+    // Detail satu batch: header + pendaftaran menunggu + murid (talent_batch).
+    // Ikut di-tag CLASSREG supaya keputusan approve/kelulusan/sertifikat langsung
+    // memuat ulang tabel murid.
+    getBatchDetail: builder.query<BatchDetail, string>({
+      query: (id) => `admin/batches/${id}`,
+      providesTags: (_r, _e, id) => [
+        { type: "Batch" as const, id },
+        { type: "Application" as const, id: "CLASSREG" },
+      ],
     }),
     createBatch: builder.mutation<ModellingBatch, BatchInput>({
       query: (body) => ({ url: "admin/batches", method: "POST", body }),
@@ -199,6 +251,7 @@ export const dashboardApi = createApi({
 export const {
   useGetDashboardSummaryQuery,
   useGetBatchesQuery,
+  useGetBatchDetailQuery,
   useCreateApplicationMutation,
   useCreateBatchMutation,
   useUpdateBatchMutation,

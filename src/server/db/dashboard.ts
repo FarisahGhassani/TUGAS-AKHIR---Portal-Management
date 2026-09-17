@@ -5,9 +5,9 @@
 // talent milik user. Akun baru belum punya keduanya → kosong (ini memperbaiki
 // bug dashboard mock yang menampilkan riwayat ELARA untuk semua orang).
 //
-// Pendaftaran ditulis dengan status awal `pending`. Catatan: batch belum di DB,
-// jadi pendaftaran kelas memakai idBatch null + biodata placeholder untuk kolom
-// yang tidak diisi form kelas (NOT NULL di tabel pendaftaran).
+// Pendaftaran ditulis dengan status awal `submitted`. Form talent & kelas kini
+// memakai template biodata yang sama (kelas tanpa portofolio), jadi kedua jenis
+// menulis data sungguhan ke kolom pendaftaran yang sama.
 // ---------------------------------------------------------------------------
 
 import { prisma } from "@/lib/prisma";
@@ -28,6 +28,16 @@ function genderToDb(g: TalentGender): PrismaGender {
   return g === "non-binary" ? "non_binary" : g;
 }
 
+// Portofolio disimpan sebagai LINK. Pengguna sering menempel "drive.google.com/…"
+// tanpa skema — dilengkapi https:// supaya tautannya bisa langsung dibuka admin.
+// Kosong → null (kolom opsional).
+function normalizePortfolioLink(raw?: string): string | null {
+  const value = raw?.trim();
+  if (!value) return null;
+  const withScheme = /^https?:\/\//i.test(value) ? value : `https://${value}`;
+  return withScheme.slice(0, 500);
+}
+
 function toApplication(p: PrismaPendaftaran): TalentApplication {
   return {
     id: String(p.idPendaftaran),
@@ -46,13 +56,13 @@ export async function getDashboard(userId: number): Promise<DashboardSummary> {
     orderBy: { createdAt: "desc" },
   });
 
-  // Kelas yang diikuti = pendaftaran kelas user yang DITERIMA (+ batch-nya).
-  // Kelulusan & sertifikat dibaca dari pendaftaran (diisi admin di Tahap 2).
+  // Kelas yang diikuti = pendaftaran kelas user yang DITERIMA atau sudah
+  // SELESAI (completed — otomatis setelah kelulusan ditetapkan), + batch-nya.
   const kelas = await prisma.pendaftaran.findMany({
     where: {
       idUser: userId,
       jenis: "kelas",
-      status: "accepted",
+      status: { in: ["accepted", "completed"] },
       idBatch: { not: null },
     },
     include: { batch: true, talentBatch: true },
@@ -100,7 +110,7 @@ export async function createApplication(
         noTelepon: input.noTelepon.trim(),
         instagram: input.instagram?.trim() || null,
         fotoProfil: input.fotoProfil,
-        fotoPortofolio: input.fotoPortofolio || null,
+        portofolioUrl: normalizePortfolioLink(input.portofolioUrl),
         jenis: "talent",
         status: "submitted",
       },
@@ -108,22 +118,25 @@ export async function createApplication(
     return toApplication(created);
   }
 
-  // jenis === "kelas". idBatch menunjuk batch terpilih (DB). Biodata yang tak
-  // diisi form kelas diberi placeholder (kolom NOT NULL).
+  // jenis === "kelas". idBatch menunjuk batch terpilih (DB). Form kelas kini
+  // memakai template biodata yang SAMA dengan form talent (tanpa portofolio),
+  // jadi seluruh kolom pendaftaran terisi data sungguhan — tanpa placeholder.
   const idBatch = Number(input.batchId);
   const created = await prisma.pendaftaran.create({
     data: {
       idUser: userId,
       idBatch: Number.isInteger(idBatch) && idBatch > 0 ? idBatch : null,
       namaTalent: input.namaTalent.trim(),
-      tanggalLahir: new Date("2000-01-01"),
-      tinggiBadan: 0,
-      beratBadan: 0,
-      sizeBaju: "-",
-      sizeSepatu: "-",
-      noIdentitas: "-",
+      gender: genderToDb(input.gender),
+      tanggalLahir: new Date(input.tanggalLahir),
+      tinggiBadan: input.tinggiBadan,
+      beratBadan: input.beratBadan,
+      sizeBaju: input.sizeBaju.trim(),
+      sizeSepatu: input.sizeSepatu.trim(),
+      noIdentitas: input.kartuIdentitas.trim(),
       noTelepon: input.noTelepon.trim(),
-      fotoProfil: "-",
+      instagram: input.instagram?.trim() || null,
+      fotoProfil: input.fotoProfil,
       jenis: "kelas",
       status: "submitted",
     },

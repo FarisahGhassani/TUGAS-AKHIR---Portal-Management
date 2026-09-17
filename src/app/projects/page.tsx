@@ -25,52 +25,70 @@ export default function ProjectsPage() {
   return (
     <>
       <NavBar />
-      <main className="flex-grow pt-6 md:pt-8 pb-12">
-        {/* Header — editorial masthead, aligned with the Talents page */}
+      <main className="flex-grow pt-4 md:pt-5 pb-12">
+        {/* Header editorial masthead, aligned with the Talents page. Judul &
+            kategori disejajarkan pada satu baris supaya bagian atas ringkas dan
+            deretan foto bisa naik lebih tinggi. */}
         <header className="px-margin-mobile md:px-margin-desktop max-w-editorial mx-auto w-full">
-
-          <div className="mt-6 flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
-            <div>
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <h1 className="font-display text-headline-lg-mobile md:text-headline-lg text-primary uppercase leading-[0.95]">
-                <span className="block">OUR</span>
-                <span className="block">PROJECTS</span>
+                OUR PROJECTS
               </h1>
-              <p className="text-body-md text-secondary mt-6 max-w-md">
-                Portal Management projects portofolio
-              </p>
+
+              <nav
+                aria-label="Filter projects by type"
+                className="flex flex-wrap gap-3 text-label-uppercase"
+              >
+                {filters.map((f) => {
+                  const active = type === f.value;
+                  return (
+                    <button
+                      key={f.value}
+                      type="button"
+                      onClick={() => setType(f.value)}
+                      className={`uppercase px-5 py-3 border transition-colors ${active
+                          ? "bg-accent text-on-accent border-accent"
+                          : "text-secondary border-outline-variant hover:border-accent hover:text-accent"
+                        }`}
+                    >
+                      {f.label}
+                    </button>
+                  );
+                })}
+              </nav>
             </div>
 
-            <nav
-              aria-label="Filter projects by type"
-              className="flex flex-wrap gap-3 text-label-uppercase"
-            >
-              {filters.map((f) => {
-                const active = type === f.value;
-                return (
-                  <button
-                    key={f.value}
-                    type="button"
-                    onClick={() => setType(f.value)}
-                    className={`uppercase px-5 py-3 border transition-colors ${active
-                        ? "bg-accent text-on-accent border-accent"
-                        : "text-secondary border-outline-variant hover:border-accent hover:text-accent"
-                      }`}
-                  >
-                    {f.label}
-                  </button>
-                );
-              })}
-            </nav>
-          </div>
-
-          <div className="mt-6 flex items-center justify-between border-t border-outline-variant pt-4 text-label-uppercase uppercase text-on-surface-variant">
-            <span>{String(projects.length).padStart(2, "0")} Projects</span>
-            <span className="hidden md:inline">Scroll →</span>
+            {/* Subtitle sebaris dengan penanda scroll — panah menyodok ke kanan
+                sebagai isyarat halus bahwa galeri bisa digeser (tanpa teks
+                jumlah project, biar bersih). */}
+            <div className="flex items-center justify-between gap-4">
+              <p className="text-body-md text-secondary max-w-md">
+                Portal Management projects portofolio
+              </p>
+              <span
+                aria-label="Scroll sideways to see more projects"
+                className="scroll-hint-arrow hidden md:inline-flex shrink-0 text-secondary"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="26"
+                  height="26"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  aria-hidden="true"
+                >
+                  <path strokeLinecap="square" d="M5 12h14M13 6l6 6-6 6" />
+                </svg>
+              </span>
+            </div>
           </div>
         </header>
 
         {/* Gallery — horizontal editorial strip */}
-        <section className="mt-6 md:mt-8">
+        <section className="mt-4 md:mt-6">
           {isError ? (
             <p className="px-margin-mobile md:px-margin-desktop max-w-editorial mx-auto text-label-uppercase text-error uppercase">
               Failed to load projects.
